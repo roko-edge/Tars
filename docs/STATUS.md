@@ -17,14 +17,14 @@ Nada do que diferencia o projeto (QAT, exporter, paridade NPU) existe em código
 
 | Componente | Estado | Observação |
 |---|---|---|
-| Rede multicamada | ✅ | `Sequential` com builder (`.linear()`, `.relu()`, `.sigmoid()`), `AnyModule` |
-| Forward pass | ✅ | Trait `Module` (`Linear`, `Activation`) |
-| Ativações | ✅ | Sigmoid (`math.rs`), ReLU |
-| Custo MSE | ✅ | `cost()` em `lib.rs` |
-| Otimizador | ✅ | Apenas BGD |
-| Gradiente | ⚠️ | **Diferenças finitas** (`num_grad`, h=1e-3) — não analítico |
-| Matrizes contíguas | ❌ | `Linear` usa `Vec<Vec<f32>>` (layout não-linear) |
-| Testes | ❌ | Zero `#[test]` |
+| Rede multicamada | Sim | `Sequential` com builder (`.linear()`, `.relu()`, `.sigmoid()`), `AnyModule` |
+| Forward pass | Sim | Trait `Module` (`Linear`, `Activation`) |
+| Ativações | Sim | Sigmoid (`math.rs`), ReLU |
+| Custo MSE | Sim | `cost()` em `lib.rs` |
+| Otimizador | Sim | Apenas BGD |
+| Gradiente | Parcial | **Diferenças finitas** (`num_grad`, h=1e-3) — não analítico |
+| Matrizes contíguas | Não | `Linear` usa `Vec<Vec<f32>>` (layout não-linear) |
+| Testes | Não | Zero `#[test]` |
 
 - `bin/main.rs`: treino de demonstração em dataset sintético de regressão (2→6→2).
 - `view/plot.rs`: protótipo inicial com petgraph, não integrado ao modelo.
@@ -34,11 +34,11 @@ Nada do que diferencia o projeto (QAT, exporter, paridade NPU) existe em código
 
 | Componente | Estado | Observação |
 |---|---|---|
-| Dot product 4 elementos | ✅ | `main.sv`: FSM `start`/`done`, registrador de bias |
-| Testbench | ✅ | `tb.sv` funcional |
-| Acumulador 48b + saturação | ❌ | Acumulador atual é de 32 bits |
-| SFU (ReLU/Sigmoid) | ❌ | Não existe |
-| `parameter MODE` | ❌ | Só existe a variante binária |
+| Dot product 4 elementos | Sim | `main.sv`: FSM `start`/`done`, registrador de bias |
+| Testbench | Sim | `tb.sv` funcional |
+| Acumulador 48b + saturação | Não | Acumulador atual é de 32 bits |
+| SFU (ReLU/Sigmoid) | Não | Não existe |
+| `parameter MODE` | Não | Só existe a variante binária |
 
 - `Makefile` referencia `main2.sv`/`tb2.sv` (variante ternária) que **não existem no
   repositório** → alvos `sim2`, `test`, `wave2`, `lint` quebram.

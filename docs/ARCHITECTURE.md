@@ -6,7 +6,7 @@ onde PyTorch/GPUs não entram.
 
 ---
 
-## 🏛️ Visão Geral em 3 Pilares
+## Visão Geral em 3 Pilares
 
 ```text
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -78,7 +78,7 @@ A observabilidade roda como **ferramenta externa/opcional** (ADR-008):
 
 ---
 
-## 🎯 Aplicações-Alvo (TinyML Edge)
+## Aplicações-Alvo (TinyML Edge)
 
 1. **Healthcare Embarcado**: monitores de ECG/EEG e próteses operando em miliwatts.
 2. **Robótica & Drones**: controle em tempo real lendo IMU com latência sub-milissegundo.
@@ -87,7 +87,7 @@ A observabilidade roda como **ferramenta externa/opcional** (ADR-008):
 
 ---
 
-## 🚫 O que o `tars-ml` NÃO é
+## O que o `tars-ml` NÃO é
 
 - Não é concorrente do PyTorch/TensorFlow para LLMs ou modelos de servidor.
 - Não é software isolado nem hardware isolado — é a união dos dois via contrato `.mem`.

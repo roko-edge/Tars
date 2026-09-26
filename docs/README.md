@@ -17,7 +17,7 @@ uma NPU parametrizada em SystemVerilog ou em microcontroladores via runtime em p
 | 5 | [QUANTIZATION.md](QUANTIZATION.md) | Q8.24, INT8, Ternário, política de acumulador/saturação e SFU |
 | 6 | [MEM_FORMAT.md](MEM_FORMAT.md) | Especificação `.mem` (contrato de interface Rust ↔ SystemVerilog) |
 
-> 💡 **Perdeu o fio da meada?** Comece sempre pelo [STATUS.md](STATUS.md).
+> **Perdeu o fio da meada?** Comece sempre pelo [STATUS.md](STATUS.md).
 
 ---
 
