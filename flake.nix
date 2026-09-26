@@ -61,7 +61,7 @@
 
             shellHook = ''
               export CMAKE_EXPORT_COMPILE_COMMANDS=1
-              echo "🚀 Ambiente tars-ml carregado (C++, Hardware/NPU, Rust e Nix)!"
+              echo "Ambiente tars-ml carregado (C++, Hardware/NPU, Rust e Nix)!"
             '';
           };
 
@@ -71,7 +71,7 @@
             packages = hardwareTools ++ [ pkgs.gnumake ];
 
             shellHook = ''
-              echo "⚡ Ambiente NPU / SystemVerilog pronto (iverilog, verilator, gtkwave)!"
+              echo "Ambiente NPU / SystemVerilog pronto (iverilog, verilator, gtkwave)!"
             '';
           };
 

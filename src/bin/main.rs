@@ -1,6 +1,6 @@
 use std::error::Error;
 use tars::*;
-const DATA_TR: &[Data<2, 2>] = &[
+const DATA_TR: [Data<2, 2>; 10] = [
     Data::new([0.1, 0.2], [0.15, 0.02]),
     Data::new([0.2, 0.8], [0.50, 0.16]),
     Data::new([0.3, 0.4], [0.35, 0.12]),
@@ -21,13 +21,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut model = Sequential::new(2).linear(6).sigmoid().linear(2).sigmoid();
 
     let optimizer = BGD::new(LR);
-    let mut prev_cost = cost(&model, DATA_TR);
+    let mut prev_cost = cost(&model, &DATA_TR);
     println!("epoch: 000000, cost is:{:014.8}", prev_cost);
 
     for i in 1..=EPOCHS {
-        let grad = num_grad(&model, DATA_TR);
+        let grad = num_grad(&model, &DATA_TR);
         optimizer.step(&mut model, &grad);
-        let curr_cost = cost(&model, DATA_TR);
+        let curr_cost = cost(&model, &DATA_TR);
         if i % (EPOCHS / 20) == 0 {
             println!(
                 "epoch: {:06.0}, cost is:{:014.8}, {:07.3}% better",

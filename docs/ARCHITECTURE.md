@@ -16,7 +16,7 @@ onde PyTorch/GPUs não entram.
  │ (Treino, QAT & Runtime)    │ (SystemVerilog)            │ Observabilidade│
  │                            │                            │                │
  │ • Zero dependências de ML  │ • Em camadas (ADR-009)     │ • Ferramenta   │
- │ • Treino QAT nativo       │ • Parametrizado            │   externa      │
+ │ • Treino QAT nativo        │ • Parametrizado            │   externa      │
  │   (Q8.24, INT8, Ternário)  │   (`parameter MODE`)       │   (`tars-viz`) │
  │ • Runtime `no_std` portátil│ • Zero-erro de paridade vs.│ • Métricas,    │
  │   para microcontroladores  │   Rust (.mem contract)     │   grafos e LOD │
