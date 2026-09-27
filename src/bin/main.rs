@@ -1,7 +1,10 @@
 use std::error::Error;
 use tars::*;
 mod experiments;
+use std::fs::File;
+use std::io::{self, Write};
 
+use crate::experiments::or::train;
 fn main() -> Result<(), Box<dyn Error>> {
     let mut train = experiments::choose();
 
@@ -32,6 +35,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             d.target
         );
     }
-
+    let mut file = File::create("npu/weights.mem")?;
+    for module in &train.model.modules {
+        match module {
+            AnyModule::Linear(linear) => {
+                for neuron in &linear.weights {
+                    for weight in neuron {
+                        writeln!(file, "{:08X}", weight.to_bits())?;
+                    }
+                }
+            }
+            AnyModule::Activation(_) => {}
+        }
+    }
     Ok(())
 }
