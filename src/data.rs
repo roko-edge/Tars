@@ -1,10 +1,13 @@
-#[derive(Clone, Copy, Debug)]
-pub struct Data<const IN: usize, const OUT: usize> {
-    pub input: [f32; IN],
-    pub target: [f32; OUT],
+#[derive(Clone, Debug)]
+pub struct Data {
+    pub input: Vec<f32>,
+    pub target: Vec<f32>,
 }
-impl<const IN: usize, const OUT: usize> Data<IN, OUT> {
-    pub const fn new(input: [f32; IN], target: [f32; OUT]) -> Self {
-        Self { input, target }
+impl Data {
+    pub fn new(input: &[f32], target: &[f32]) -> Self {
+        Self {
+            input: input.to_vec(),
+            target: target.to_vec(),
+        }
     }
 }

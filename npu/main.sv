@@ -5,8 +5,6 @@ module npu #(
     input logic rst,
     input logic start,
     input logic signed [31:0] bias,
-    logic signed [31:0] ram_a[N],
-    logic signed [31:0] ram_b[N],
     output logic done,
     output logic signed [31:0] result
 
@@ -14,13 +12,15 @@ module npu #(
 
 
 
-  localparam int IDXW = N == 1 ? 1 : $clog2(N) - 1;
-  logic [IDXW:0] i;
+  logic signed [31:0] weights[N];
+  logic signed [31:0] act[N];
+  localparam int IDXW = N == 1 ? 1 : $clog2(N);
+  logic [IDXW-1:0] i;
 
   logic signed [31:0] mult;
   logic signed [31:0] acc;
 
-  assign mult = ram_a[i] * ram_b[i];
+  assign mult = act[i] * weights[i];
 
   always_ff @(posedge clk or posedge rst) begin
     if (rst) begin
