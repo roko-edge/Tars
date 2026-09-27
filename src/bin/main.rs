@@ -2,9 +2,8 @@ use std::error::Error;
 use tars::*;
 mod experiments;
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::Write;
 
-use crate::experiments::or::train;
 fn main() -> Result<(), Box<dyn Error>> {
     let mut train = experiments::choose();
 
