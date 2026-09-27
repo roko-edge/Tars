@@ -1,36 +1,86 @@
-use petgraph::graph::UnGraph;
+use petgraph::graph::DiGraph;
 use std::io::Result;
 use std::process::Command;
 use tars::view::plot::*;
 
-// fn network_to_ungraph() {}
+/*
+Proposed design:
+ *Input       Hidden        Output
+  x0          h1_0          y0
+  x1          h1_1          y1
+  x2          h1_2
+  x3          h1_3
+ */
 
 fn main() -> Result<()> {
-    println!("Hello from visualization module!");
+    let mut net = NetGraph::new();
 
-    let mut graph = UnGraph::<String, f32>::new_undirected();
+    let h0 = Perceptron::new(0, 1.0, 0.0);
+    let h1 = Perceptron::new(1, 2.0, 0.0);
+    let h2 = Perceptron::new(2, 3.0, 0.0);
 
-    let input = graph.add_node("Arroz".to_string());
-    let hidden = graph.add_node("Sorvete".to_string());
-    let output = graph.add_node("Arroz Com Sorvete".to_string());
+    let h3 = Perceptron::new(3, 1.0, 0.0);
+    let h4 = Perceptron::new(4, 2.0, 0.0);
 
-    graph.add_edge(input, hidden, 1.0);
-    graph.add_edge(hidden, output, 1.0);
+    let h5 = Perceptron::new(5, 3.0, 0.0);
 
-    let net: NetGraph<String> = NetGraph::new(graph);
+    net.add_node(h0);
+    net.add_node(h1);
+    net.add_node(h2);
+
+    net.add_node(h3);
+    net.add_node(h4);
+
+    net.add_node(h5);
+
+    net.add_edge(0, 3, 1.0);
+    net.add_edge(0, 4, 1.0);
+
+    net.add_edge(1, 3, 1.0);
+    net.add_edge(1, 4, 1.0);
+
+    net.add_edge(2, 3, 1.0);
+    net.add_edge(2, 4, 1.0);
+
+    net.add_edge(3, 5, 1.0);
+    net.add_edge(4, 5, 1.0);
+
     let _dot = net.to_dot();
 
-    let default_path: &str = "src/view/graph/network.dot";
+    let src_path: &str = "src/view/graph/network.dot";
+    let output_path: &str = "src/view/graph/network.png";
+    let input_format: &str = ".dot";
+    let output_format: &str = ".png";
 
-    net.save_dot(default_path)?;
+    // let _dot = Dot::with_config(&net, &[config::RankDir(RankDir::LR)]);
 
-    Command::new("dot")
-        .arg("src/view/graph/network.dot")
-        .arg("-Tsvg")
+    net.save_dot(src_path)?;
+
+    // TODO: Create images dir and add it to .gitignore
+    // TODO: Create a module to dot to png handler
+    // TODO: Move dot compilation flags to a separate structure
+
+    let out = Command::new("dot")
+        .arg(src_path)
+        .arg("-Grankdir=LR")
+        .arg("-Gsplines=true")
+        .arg("-Tpng")
         .arg("-o")
-        .arg("src/view/graph/network.svg")
+        .arg(output_path)
         .status()
-        .expect("Falha ao executar o comando 'dot'. O Graphviz está instalado e no PATH?");
+        .expect("Coulnd't execut the 'dot' command. Check if Graphviz is installed on your PATH");
+
+    if !out.success() {
+        eprintln!(
+            "Couldn't convert from {} to {}",
+            input_format, output_format
+        );
+    }
+
+    println!(
+        "Successfully converted from {} to {} - Check {}",
+        input_format, output_format, output_path
+    );
 
     net.plot();
 
