@@ -1,7 +1,7 @@
 use crate::AnyModule;
 use crate::Data;
 use crate::Sequential;
-use crate::cost;
+use crate::cost::cost;
 #[derive(Clone, Debug)]
 pub struct Grad {
     pub modules: Vec<AnyModule>,

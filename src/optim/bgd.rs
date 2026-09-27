@@ -1,6 +1,6 @@
 use crate::AnyModule;
-use crate::Grad;
-use crate::Sequential;
+use crate::grad::Grad;
+use crate::sequential::Sequential;
 #[derive(Clone, Copy, Debug)]
 pub struct BGD {
     lr: f32,
