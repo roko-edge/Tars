@@ -1,10 +1,9 @@
-use crate::layer::Activation;
 use core::fmt;
 use petgraph::dot::Dot;
 use petgraph::graph::DiGraph;
-use petgraph::dot::Dot;
 use petgraph::prelude::*;
 use std::fmt::Debug;
+use std::fs;
 use std::io::Result;
 
 // Graph vertices should be only Perceptron instances, while edges are f32.
