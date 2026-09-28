@@ -1,269 +1,150 @@
-# tars-ml — Roteiro de Evolução & Co-Design Hardware/Software
+# tars-ml — Roadmap v0 → v8 (Co-Design Hardware/Software)
 
-Este documento estabelece o plano de evolução incremental do `tars-ml`:
-desde os fundamentos de álgebra linear em Rust (Edition 2024) até a síntese de **NPUs dedicadas em SystemVerilog**
-para redes neurais de tempo contínuo (*Closed-form Continuous-time Neural Networks — CfC*).
-
----
-
-## 📋 Documentação Relacionada
-
-- [Índice & Glossário (`README.md`)](README.md)
-- [Visão Geral da Arquitetura (`ARCHITECTURE.md`)](ARCHITECTURE.md) — Os 3 pilares e casos de uso TinyML.
-- [Precisão Numérica & QAT (`QUANTIZATION.md`)](QUANTIZATION.md) — Modos Q8.24, INT8 e Ternário.
-- [Formato de Memória `.mem` (`MEM_FORMAT.md`)](MEM_FORMAT.md) — Contrato de exportação Rust ↔ Verilog.
-- [Onde Estamos Agora (`STATUS.md`)](STATUS.md) — Estado atual do código e próximo passo.
-- [Decisões de Arquitetura (`DECISIONS.md`)](DECISIONS.md) — O registro de ADRs do projeto.
+Progressão incremental: fundamentos de álgebra linear em Rust (Edition 2024) até
+NPUs dedicadas em SystemVerilog para redes de tempo contínuo (CfC).
 
 ---
 
-## 🧭 Como Ler e Executar este Roadmap
+## Como executar o roadmap
 
-To manter a progressão fluida e evitar travamentos:
-
-1. **Modo Âncora (`Q8_24`)**: é o caminho crítico obrigatório de **todas as versões**.
-   Toda versão deve ser concluída e validada em `Q8_24` antes de avançar.
-2. **Modos Estendidos (`INT8` e `TERNARY`)**: o Rust e a NPU suportam a capacidade em todas
-   as versões, mas a validação formal com critérios de aceitação (DoD) é exigida nos
-   **marcos de destaque** (v0, v0.5, v1, v6 e v7).
-3. **Regra do "Não Empacar"**: se você travar na quantização/ternarização de uma versão complexa,
-   finalize o marco na versão Âncora (`Q8_24`), registre o aprendizado no `STATUS.md` e avance.
-
----
-
-## 📊 Matriz Tripla de Precisão por Versão
-
-```text
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │                         MATRIZ DE PRECISÃO POR VERSÃO                       │
- ├───────────────────┬───────────────────┬───────────────────┬─────────────────┤
- │ Versão            │ Q8.24 (Âncora)    │ INT8 QAT          │ TERNÁRIO QAT    │
- ├───────────────────┼───────────────────┼───────────────────┼─────────────────┤
- │ v0: Neural Core   │ Matrix Q8.24      │ Matrix INT8       │ Matrix Mux 3:1  │
- │ v0.5: Loop Closure│ Rede XOR na NPU   │ XOR INT8          │ XOR Ternária    │
- │ v1: Dense MLP     │ Systolic Q8.24    │ Systolic INT8     │ Systolic Ternary│
- │ v2: Spatial CNN   │ LineBuffer Q8.24  │ LineBuffer INT8   │ LineBuffer Tern │
- │ v3: Multi-Ch CNN  │ DoubleBuffer Q8   │ DoubleBuffer INT8 │ DoubleBuf Tern  │
- │ v4: Neural ODE    │ Integrator Q8.24  │ Integrator INT8   │ Integrator Tern │
- │ v5: LTC           │ Liquid Core Q8    │ Liquid Core INT8  │ Liquid Core Tern│
- │ v6: CfC           │ CFE Core Q8.24    │ CFE Core INT8     │ CFE Core Ternary│
- │ v7: Sparsidade    │ Packing & Skip Q8 │ Zero-Skip INT8    │ Zero-Skip Tern  │
- │ v8: Streaming Edge│ Event DMA Q8.24   │ Event DMA INT8    │ Event DMA Tern  │
- └───────────────────┴───────────────────┴───────────────────┴─────────────────┘
-```
+1. **Modo Âncora (`Q8_24`)**: caminho crítico obrigatório de **toda** versão.
+   Nenhuma versão avança sem validação completa em Q8.24.
+2. **Modos Estendidos (`INT8`, `TERNARY`)**: implementados em todas as versões,
+   com DoD formal exigido apenas nos **marcos de destaque**: v0, v0.5, v1, v6 e v7.
+3. **Regra do "Não Empacar"**: se travar na quantização/ternarização de uma versão,
+   feche o marco em Q8.24, registre no [STATUS.md](STATUS.md) e avance.
+4. **Hardware em camadas (ADR-009)**: cada versão adiciona apenas o **engine** da
+   operação nova; MAC, SFU, memória e saturação são sempre reutilizados.
 
 ---
 
-## 🔍 Detalhamento Versão por Versão
+## Matriz de Precisão por Versão
+
+| Versão | Q8.24 (Âncora) | INT8 QAT | Ternário QAT |
+|---|---|---|---|
+| v0: Neural Core | Matrix Q8.24 | Matrix INT8 | Mux 3:1 |
+| v0.5: Loop Closure | XOR na NPU | XOR INT8 | XOR Ternária |
+| v1: Dense MLP | Systolic Q8.24 | Systolic INT8 | Systolic Ternary |
+| v2: Spatial CNN | LineBuffer Q8.24 | LineBuffer INT8 | LineBuffer Tern |
+| v3: Multi-Ch CNN | DoubleBuffer Q8 | DoubleBuffer INT8 | DoubleBuf Tern |
+| v4: Neural ODE | Integrator Q8.24 | Integrator INT8 | Integrator Tern |
+| v5: LTC | Liquid Core Q8 | Liquid Core INT8 | Liquid Core Tern |
+| v6: CfC | CFE Core Q8.24 | CFE Core INT8 | CFE Core Ternary |
+| v7: Sparsidade | Packing & Skip Q8 | Zero-Skip INT8 | Zero-Skip Tern |
+| v8: Streaming Edge | Event DMA Q8.24 | Event DMA INT8 | Event DMA Tern |
 
 ---
 
-### v0 — Neural Core & Matrix Engine Parametrizada
+## Detalhamento e Critérios de Conclusão (DoD)
 
-> **Foco**: álgebra linear contígua, backpropagation analítico, treino QAT e produto escalar na NPU.
+### v0 — Neural Core & Matrix Engine
 
-#### 1. Software (Rust)
-- Structs de tensores/matrizes (ex.: `Matrix<T>`, `Layer<const IN: usize, const OUT: usize>`) com alocação contígua em memória ou const generics.
-- Multiplicação matricial, soma vetorial, produto Hadamard e transposição.
-- Derivadas analíticas para Sigmoid `sigma'(x) = sigma(x)(1 - sigma(x))` e ReLU `f'(x) = (x > 0) ? 1 : 0`.
-- Treino QAT em Q8.24, INT8 e Ternário com STE em Rust.
-- Exportador `exporter.rs` gerando `model.mem`, `input.mem` e `expected.mem`.
+> Álgebra linear contígua, backprop analítico, QAT e produto escalar na NPU.
 
-#### 2. Hardware: `npu_core #(parameter MODE)`
-- Acumulador estendido de 48 bits para evitar overflow na acumulação Q8.24.
-- Regra de saturação para trazer o acumulador de volta para 32 bits.
-- SFU com ReLU combinacional.
+- **Rust**: tensores/matrizes com memória contígua; multiplicação/soma/Hadamard/transposição;
+  derivadas analíticas (`σ' = σ(1-σ)`, `ReLU'(x) = x>0 ? 1 : 0`); QAT (Q8.24, INT8, Ternário)
+  com STE; `exporter.rs` gerando `.mem` ([MEM_FORMAT.md](MEM_FORMAT.md)).
+- **NPU**: `npu_core #(.MODE)` com acumulador de 48 bits, saturação e SFU com ReLU.
 
-#### 📋 Critérios de Conclusão (DoD - Definition of Done)
-- [ ] Rust: treino do XOR (2->2->1) e Regressão Linear converge com erro MSE < 0.01 em `Q8_24`.
-- [ ] Exporter: gera os arquivos `.mem` válidos no formato especificado em `MEM_FORMAT.md`.
-- [ ] NPU: simulação de produto escalar simples de 4 elementos no `tb.sv` bate com o Rust com **zero erros de divergência** nos 3 modos.
+- [ ] XOR (2→2→1) e regressão linear com MSE < 0.01 em Q8.24
+- [ ] Exporter gera `.mem` válido nos 3 modos
+- [ ] Dot product de 4 elementos no `tb.sv` com **zero divergência** vs. Rust nos 3 modos
 
----
+### v0.5 — Fechamento do Loop de Co-Design
 
-### v0.5 — Fechamento do Loop de Co-Design (Marco Intermediário)
+> Fechar o ciclo completo Rust→NPU numa rede inteira antes de escalar (ADR-005).
 
-> 💡 **Por que este marco existe?** Para evitar um salto gigante e arriscado entre o produto
-> escalar simples da v0 e o Array Sistólico da v1. Aqui fechamos o ciclo completo de
-> hardware e software na rede XOR inteira antes de aumentar a complexidade.
+- **NPU**: testbench lê `model.mem` e guia a NPU camada a camada pela rede XOR.
 
-#### 1. Escopo de Co-Design
-- Executar a rede XOR (2->2->1) **inteira em hardware**, camada por camada, no SystemVerilog.
-- O testbench `tb.sv` lê o `model.mem` exportado pelo Rust e guia a NPU sequencialmente pelas 2 camadas.
-
-#### 📋 Critérios de Conclusão (DoD)
-- [ ] NPU: executa a inferência completa das 4 combinações do XOR em SystemVerilog.
-- [ ] Paridade: resultado da NPU bate com a saída de `expected.mem` em `Q8_24` com **zero erros de bit** em relação ao Rust.
-- [ ] Relatório: registrado o número de ciclos de clock por inferência no `STATUS.md`.
-
----
+- [ ] Inferência completa das 4 combinações do XOR em SystemVerilog
+- [ ] Paridade **zero erro de bit** vs. `expected.mem` em Q8.24
+- [ ] Ciclos de clock por inferência registrados no [STATUS.md](STATUS.md)
 
 ### v1 — Dense MLP & Array Sistólico
 
-> **Foco**: redes multicamadas densas, classificação no dataset MNIST e aceleração sistólica.
+- **Rust**: `DenseLayer`; Softmax estável + CCE (gradiente `y_hat − y`);
+  SGD com momentum; loader MNIST (IDX binário).
+- **NPU**: `npu_systolic` — array 8x8 de PEs + SRAM de pesos por camada.
 
-#### 1. Software (Rust)
-- `DenseLayer(in_features, out_features)`.
-- Softmax estável e Categorical Cross-Entropy (CCE) com gradiente analítico `grad = y_hat - y`.
-- Otimizador SGD com Momentum (`v_t = beta * v_{t-1} + lr * grad`).
-- Loader nativo para dataset MNIST (formato binário IDX).
+- [ ] MNIST Q8.24 > 95% · INT8 > 93% · Ternário > 90% *(hipóteses — recalibrar)*
+- [ ] Paridade zero-erro em 100 amostras de teste
 
-#### 2. Hardware: `npu_systolic #(parameter MODE)`
-- Array Sistólico 1D/2D (8x8 Processing Elements).
-- Memória SRAM on-chip para pesos por camada.
+### v2 — Spatial CNN & Line-Buffer Engine
 
-#### 📋 Critérios de Conclusão (DoD) *(Metas Iniciais — Recalibrar Empiricamente)*
-- [ ] Acurácia no MNIST (Q8.24 Âncora): > 95% no conjunto de teste.
-- [ ] Acurácia estendida (INT8 QAT): > 93% (hipótese).
-- [ ] Acurácia estendida (Ternário QAT): > 90% (hipótese).
-- [ ] Paridade NPU: zero erros em amostragem de 100 imagens de teste do MNIST.
+- **Rust**: `Conv2D`, `MaxPool2D`, `AvgPool2D`, `Flatten`; `im2col`+GEMM; Adam.
+- **NPU**: `npu_cnn` — line buffer com shift registers para janelas KxK + max-pooling em HW.
 
----
-
-### v2 — Spatial CNN 2D & Line-Buffer Engine
-
-> **Foco**: convoluções bidimensionais e processamento espacial com buffer de linha.
-
-#### 1. Software (Rust)
-- `Conv2D`, `MaxPool2D`, `AvgPool2D`, `Flatten`.
-- Algoritmo `im2col` + GEMM adaptado aos modos de precisão.
-- Otimizador Adam (Adaptive Moment Estimation).
-
-#### 2. Hardware: `npu_cnn #(parameter MODE)`
-- Line-Buffer Engine com registradores de deslocamento para janelas KxK.
-- Max-Pooling integrado em hardware.
-
-#### 📋 Critérios de Conclusão (DoD)
-- [ ] Acurácia no MNIST (Q8.24 Âncora): > 98%.
-- [ ] NPU: convolução de imagem 28x28 executada com Line-Buffer sem acessos redundantes à memória externa.
-
----
+- [ ] MNIST Q8.24 > 98%
+- [ ] Convolução 28x28 sem acessos redundantes à memória externa
 
 ### v3 — Multi-channel CNN & Double Buffering
 
-> **Foco**: sinais multicanais (RGB, vibração multi-eixo), BatchNorm e gerenciamento de memória.
+- **Rust**: conv multicanal `Cin→Cout`, `BatchNorm2D` (fusão na inferência), AdamW + cosine
+  annealing; loader CIFAR-10.
+- **NPU**: `npu_multichannel` — SRAM ping-pong (processa C enquanto carrega C+1).
 
-#### 1. Software (Rust)
-- Convolução multicanal `Cin -> Cout`, `BatchNorm2D` (com fusão na inferência) e `SpatialDropout`.
-- Otimizador AdamW + Cosine Annealing Learning Rate Scheduler.
-- Loader nativo para dataset CIFAR-10.
-
-#### 2. Hardware: `npu_multichannel #(parameter MODE)`
-- Double Buffering Ping-Pong SRAM (carrega canal C+1 enquanto processa C).
-
-#### 📋 Critérios de Conclusão (DoD)
-- [ ] Acurácia no CIFAR-10 (Q8.24 Âncora): > 75%.
-- [ ] NPU: fusão de BatchNorm no peso verificada no testbench.
-
----
+- [ ] CIFAR-10 Q8.24 > 75%
+- [ ] Fusão de BatchNorm nos pesos verificada no testbench
 
 ### v4 — Neural ODE & Integrador Temporal
 
-> **Foco**: equações diferenciais ordinárias parametrizadas por redes neurais para trajetórias contínuas.
+- **Rust**: `dh/dt = f_θ(h,t)`; solvers Euler e RK4; backprop via adjoint state com QAT.
+- **NPU**: `npu_ode` — pipeline reintroduzindo os 4 estágios do RK4 no núcleo matricial.
 
-#### 1. Software (Rust)
-- Formulation: `dh(t)/dt = f_theta(h(t), t)`.
-- Solvers em Rust: Euler e Runge-Kutta 4ª Ordem (RK4).
-- Backpropagation via Adjoint State Method com QAT.
-
-#### 2. Hardware: `npu_ode #(parameter MODE)`
-- Integrator Pipeline Engine re-alimentando os 4 estágios do RK4 no núcleo matricial.
-
-#### 📋 Critérios de Conclusão (DoD)
-- [ ] Rust: reconstrução de trajetória física sintética (pêndulo/espiral) com erro MSE < 0.05.
-- [ ] NPU: pipeline de RK4 executa a integração temporal em ciclos determinísticos.
-
----
+- [ ] Reconstrução de trajetória sintética (pêndulo/espiral) com MSE < 0.05
+- [ ] Pipeline RK4 em ciclos determinísticos
 
 ### v5 — LTC (Liquid Time-Constant Core)
 
-> **Foco**: redes bio-inspiradas com constantes de tempo adaptativas para séries temporais irregulares.
+- **Rust**: célula LTC com condutâncias solúveis; AdamW com clipping `|grad| ≤ 1.0`.
+- **NPU**: `npu_liquid` — solver exponencial não-linear para sigmoides/exponenciais.
 
-#### 1. Software (Rust)
-- Célula LTC com condutâncias sinápticas solúveis.
-- Otimizador AdamW com clipping rígido de gradientes (`|grad| <= 1.0`).
-
-#### 2. Hardware: `npu_liquid #(parameter MODE)`
-- Non-linear Exponential Solver Core para avaliação de sigmoides e exponenciais.
-
-#### 📋 Critérios de Conclusão (DoD)
-- [ ] Rust: predição de série temporal com amostragem irregular/gaps de dados superando baseline RNN.
-- [ ] NPU: registradores de feedback de estado interno atualizados sem corrupção.
-
----
+- [ ] Série temporal irregular/gaps superando baseline RNN
+- [ ] Registradores de feedback de estado sem corrupção
 
 ### v6 — CfC (Closed-Form Continuous-Time NPU)
 
-> **Foco**: solução analítica em forma fechada para redes contínuas com complexidade O(1) na inferência.
+- **Rust**: célula CfC `h(t) ≈ (f(x,h₀) ⊙ e^(-(A(x,h₀)+b)t)) + g(x,h₀)`; SiLU/Swish e Tanh com QAT.
+- **NPU**: `npu_cfc` — Fast Closed-Form Engine: 3 sub-blocos matriciais paralelos +
+  `e^(-x)` em ponto fixo (CORDIC ou PWL).
 
-#### 1. Software (Rust)
-- Célula CfC em forma fechada: `h(t) ≈ (f(x, h0) ⊙ e^(-[A(x, h0) + b] * t)) + g(x, h_0)`.
-- Ativação SiLU/Swish e Tanh com treino QAT.
+- [ ] Paridade de acurácia com LTC com inferência O(1) (sem passos de solver)
+- [ ] `h(t)` em número fixo de ciclos determinísticos por amostra
 
-#### 2. Hardware: `npu_cfc #(parameter MODE)`
-- Fast Closed-Form Engine (CFE) com 3 sub-blocos matriciais paralelos e cálculo de e^(-x) em ponto fixo via CORDIC ou PWL.
+### v7 — Sparsidade & Eficiência Energética
 
-#### 📋 Critérios de Conclusão (DoD)
-- [ ] Rust: modelo CfC atinge paridade de acurácia com LTC no problema de controle, mas com inferência O(1) sem passos do solver.
-- [ ] NPU: avaliação de h(t) executada em número fixo de ciclos determinísticos por amostra.
+- **Rust**: Sparsity-Aware QAT forçando alta fração de pesos nulos; exportador com
+  packing denso (16 pesos ternários de 2 bits por palavra de 32 bits).
+- **NPU**: `npu_cfc_sparse` — **Zero-Value Skipping** (pula o ciclo quando peso = 0) +
+  pack/unpack de bits na leitura da SRAM.
 
----
-
-### v7 — Sparsidade & Eficiência Energética (CfC Otimizada)
-
-> **Foco**: compressão e zeragem de computação para o modelo CfC em modo Ternário e INT8.
-
-#### 1. Software (Rust)
-- Treino com indução de esparsidade (Sparsity-Aware QAT) forçando grande percentual de pesos nulos (`w = 0`).
-- Exportador de densidade com empacotamento denso (16 pesos ternários de 2 bits por palavra de 32 bits).
-
-#### 2. Hardware: `npu_cfc_sparse #(parameter MODE)`
-- **Zero-Value Skipping**: circuito que detecta pesos `0` e pula aoperação no ciclo de clock.
-- Lógica de empacotamento e desempacotamento de bits na leitura da SRAM.
-
-#### 📋 Critérios de Conclusão (DoD)
-- [ ] Rust: modelo CfC ternário esparso retém >= 95% da acurácia do modelo Q8.24 em tarefa de controle.
-- [ ] NPU: redução mensurável de ciclos de clock proporcional ao percentual de pesos nulos.
-
----
+- [ ] CfC ternário esparso retém ≥ 95% da acurácia Q8.24
+- [ ] Redução de ciclos proporcional à esparsidade, medida no `tb.sv`
 
 ### v8 — Streaming Edge & Standby Ativo
 
-> **Foco**: processamento assíncrono direto de sensores de borda com consumo de miliwatts.
+- **Rust**: pipeline orientado a eventos com **zero alocação dinâmica** (`no-malloc`/`no_std`).
+- **NPU**: `npu_streaming` — Direct Sensor DMA (IMU/ECG), counter de `dt` automático para
+  a CfC, **Wake-on-Event** (dorme mantendo estado na SRAM).
 
-#### 1. Software (Rust)
-- Pipeline orientado a eventos com zero alocação dinâmica (`no-malloc` / `no_std`).
-
-#### 2. Hardware: `npu_streaming #(parameter MODE)`
-- Interface Direct Sensor DMA lendo diretamente do barramento do sensor inercial/ECG.
-- Counter de tempo injetando o variação temporal `dt` automaticamente no cálculo da CfC.
-- **Wake-on-Event Logic**: NPU em estado de sono (*sleep mode*) mantendo o estado na SRAM, despertando apenas na chegada de novo evento.
-
-#### 📋 Critérios de Conclusão (DoD)
-- [ ] Rust: código de inferência compila sem warnings de alocação de memória e executa em tempo real.
-- [ ] NPU: simulação no `tb.sv` demonstra o ciclo de *sleep -> wake -> inferência -> sleep*.
+- [ ] Inferência compila sem warnings de alocação e roda em tempo real
+- [ ] `tb.sv` demonstra *sleep → wake → inferência → sleep*
 
 ---
 
-## 📐 Framework de Co-Design Benchmarking *(Em Definição pela Equipe)*
+## Métricas obrigatórias a cada versão (benchmarking Co-Design)
 
-> ⚠️ **Status**: a equipe está estudando a melhor forma gráfica/interativa
-> de apresentar esses dados. As métricas mínimas obrigatórias a cada versão são:
-
-1. **Paridade Numérica**: 0 erros de bit entre Rust e SystemVerilog.
-2. **Memória**: bytes ocupados no arquivo `.mem`.
-3. **Ciclos/Clock**: ciclos medidos no `tb.sv` por inferência.
+1. **Paridade numérica**: 0 erros de bit Rust ↔ SystemVerilog.
+2. **Memória**: bytes dos arquivos `.mem`.
+3. **Ciclos**: clocks por inferência medidos no `tb.sv`.
 
 ---
 
-## 📚 Referências Bibliográficas
+## Referências
 
-1. **CfC (Closed-Form Continuous-time Networks)**:
-   Hasani, R., Lechner, M., Amini, A., Rus, D. et al. *"Closed-form continuous-time neural networks"*. Nature Machine Intelligence, vol. 4, pp. 992–1003, 2022.
-2. **LTC (Liquid Time-Constant Networks)**:
-   Hasani, R., Lechner, M. et al. *"Liquid Time-constant Networks"*. AAAI Conference on Artificial Intelligence, 2021.
-3. **QAT (Quantization-Aware Training)**:
-   Jacob, B. et al. *"Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference"*. CVPR, 2018.
-4. **Pesos Ternários**:
-   Li, F., Zhang, B., Liu, B. *"Ternary Weight Networks"*. arXiv:1605.04711, 2016.
-   Ma, S. et al. *"The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits"*. Microsoft Research, 2024.
+1. Hasani et al. *Closed-form continuous-time neural networks*. Nature MI, 2022.
+2. Hasani et al. *Liquid Time-constant Networks*. AAAI, 2021.
+3. Jacob et al. *Quantization and Training of Neural Networks for Efficient
+   Integer-Arithmetic-Only Inference*. CVPR, 2018.
+4. Li, Zhang, Liu. *Ternary Weight Networks*. arXiv:1605.04711, 2016.
+5. Ma et al. *The Era of 1-bit LLMs*. Microsoft Research, 2024.

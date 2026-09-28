@@ -1,12 +1,12 @@
-# 🚀 Ambiente Simples em SystemVerilog
+# Ambiente em SystemVerilog
 
 Espaço para você escrever e testar seus módulos livremente em **SystemVerilog**.
 
 ---
 
-## ⚡ Comandos
+## Comandos
 
-Dentro desta pasta (`cd simple`), use:
+Dentro desta pasta (`npu/`), use:
 
 ```bash
 make sim     # Compila com iverilog (-g2012) e executa no terminal

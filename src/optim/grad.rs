@@ -1,16 +1,13 @@
 use crate::AnyModule;
 use crate::Data;
 use crate::Sequential;
-use crate::cost;
+use crate::cost::cost;
 #[derive(Clone, Debug)]
 pub struct Grad {
     pub modules: Vec<AnyModule>,
 }
 
-pub fn num_grad<const IN: usize, const OUT: usize>(
-    model: &Sequential,
-    data: &[Data<IN, OUT>],
-) -> Grad {
+pub fn num_grad(model: &Sequential, data: &[Data]) -> Grad {
     let mut temp_model = model.clone();
     let mut grad = Grad {
         modules: model.modules.clone(),

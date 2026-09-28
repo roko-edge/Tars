@@ -1,145 +1,147 @@
-# tars-ml — Registro de Decisões de Arquitetura (ADRs)
+# tars-ml — Registro de Decisões (ADRs)
 
-Este documento registra as principais decisões de arquitetura e design tomadas pela equipe,
-seus contextos, razões e consequências. Ele garante que o projeto preserva o "fio da meada"
-mesmo com o passar do tempo.
-
----
-
-## ADR-001: Adotar Ponto Fixo Q8.24 como Formato Numérico Âncora
-
-### Contexto
-Para evitar a complexidade, área de silício e consumo de energia de multiplicadores de ponto
-flutuante (IEEE 754 float32) na NPU em SystemVerilog, precisávamos escolher uma representação
-em Ponto Fixo de 32 bits.
-
-### Alternativas Consideradas
-- **Q16.16**: 16 bits inteiros, 16 bits fracionários. Concede faixa de -32768 a +32767, mas perde
-  precisão fracionária (resolução de 0.000015). Desperdício de bits inteiros para redes neurais.
-- **Q4.28**: 4 bits inteiros, 28 bits fracionários. Altíssima resolução (10^-9), mas faixa
-  muito estreita (-8.0 a +7.99), com risco severo de overflow no acúmulo de produtos escalares.
-- **Q8.24**: 8 bits inteiros (-128.0 a +127.99), 24 bits fracionários (resolução de 5.9 x 10^-8).
-
-### Decisão
-Adotar **Q8.24** como formato âncora obrigatório de todas as versões do projeto.
-
-### Consequências
-- A resolução de 24 bits fracionários é **praticamente idêntica à mantissa do f32** do Rust
-  (23 bits), garantindo que a perda de precisão em relação ao ponto flutuante é imperceptível.
-- A faixa de -128 a +127 dá margem segura para pesos, biases e ativações.
-- Para evitar overflow no acúmulo de somatórios longos, a NPU usará um acumulador estendido de 48 bits.
+Cada ADR registra **uma decisão, o porquê e as consequências**. Regras de escrita:
+decisão em uma frase; justificativas em bullets; nada de prosa.
 
 ---
 
-## ADR-002: Manter Rust e SystemVerilog no Mesmo Repositório (Monorepo)
+## ADR-001 — Q8.24 como formato numérico âncora
 
-### Contexto
-Houve dúvida sobre se a NPU em SystemVerilog deveria ser movida para um repositório separado
-do engine Rust.
+**Decisão.** Todo o projeto usa ponto fixo **Q8.24** (1 sinal + 7 inteiros + 24 fracionários)
+como formato de referência obrigatório de cada versão.
 
-### Decisão
-**Manter tudo em um único repositório (Monorepo).**
+**Por quê.**
+- Multiplicadores de ponto flutuante (IEEE 754) custam área e energia demais na NPU.
+- 24 bits fracionários ≈ mantissa do `f32` (23 bits) → perda imperceptível vs. Rust.
+- Faixa ±128 evita overflow em pesos/biases/ativações (Q4.28 estoura, Q16.16 desperdiça bits).
 
-### Razões
-1. **Atomicidade no Co-Design**: qualquer alteração no formato de exportação de pesos no Rust
-   quebraria a NPU no mesmo instante se os projetos fossem separados.
-2. **Co-Simulação Automatizada**: o testbench `tb.sv` roda no mesmo pipeline do Rust, executando
-   o treino, exportando o `.mem` e validando a paridade de bits em um único comando (via `cargo`/scripts).
-3. **Identidade do Projeto**: o `tars-ml` é uma solução completa de Co-Design Hardware/Software;
-   separá-lo reduziria o Rust a "mais uma biblioteca" e o Verilog a "mais um multiplicador".
+**Consequências.** Acumulador estendido de 48 bits na NPU para somas longas (ver
+[QUANTIZATION.md](QUANTIZATION.md)).
 
 ---
 
-## ADR-003: Treino Consciente da Precisão (QAT) em Todos os Níveis
+## ADR-002 — Monorepo: Rust e SystemVerilog juntos
 
-### Contexto
-Quantização aplicada após o treino (Post-Training Quantization - PTQ) degrada a acurácia,
-especialmente em modelos ternários.
+**Decisão.** Engine Rust e NPU em SystemVerilog vivem **no mesmo repositório**.
 
-### Decisão
-Implementar **Quantization-Aware Training (QAT)** desde o engine de treino em Rust, aplicando
-a discretização no forward pass com Straight-Through Estimator (STE) no backward pass.
-
-### Razões
-- Permite que o Rust treine modelos em Q8.24, INT8 e Ternário que já nascem adaptados às limitações
-  do hardware, preservando a acurácia final.
+**Por quê.**
+- Mudança no formato `.mem` do Rust quebraria a NPU imediatamente — no monorepo o CI pega no
+  mesmo commit.
+- Co-simulação (treino → export → paridade) em um único pipeline.
 
 ---
 
-## ADR-004: NPU Parametrizada via `parameter MODE` em SystemVerilog
+## ADR-003 — Treino Consciente da Precisão (QAT), nunca PTQ
 
-### Contexto
-Para evitar duplicação de código (*boilerplate*) com arquivos separados como `npu_q8.sv`, `npu_int8.sv`
-e `npu_ternary.sv`, precisávamos de uma estrutura limpa no hardware.
+**Decisão.** O modelo **treina simulando a aritmética do hardware** (QAT), com
+Straight-Through Estimator no backward pass; quantização pós-treino (PTQ) não é usada.
 
-### Decisão
-Usar o recurso nativo `parameter string MODE = "Q8_24"` e blocos `generate` em SystemVerilog
-para adaptar a lógica aritmética (multiplicadores de 32b, 8b ou Muxes 3:1) em tempo de síntese.
+**Por quê.** PTQ degrada acurácia, principalmente em redes pequenas e ternárias.
+Com QAT os pesos nascem adaptados à baixa precisão.
 
 ---
 
-## ADR-005: Inserir o Marco Intermediário v0.5 (Fechamento do Loop de Co-Design)
+## ADR-004 — Datapath selecionado em tempo de síntese via `parameter MODE`
 
-### Contexto
-O salto da v0 (produto escalar de 4 elementos) para a v1 (Array Sistólico 8x8 + MNIST) era grande
-demais e trazia risco de travamento do desenvolvimento.
+**Decisão.** Um único módulo parametrizado (`npu_core #(.MODE(...))`) cobre Q8.24,
+INT8 e Ternário usando `generate` — **não** arquivos separados (`npu_q8.sv`, `npu_int8.sv`, ...).
 
-### Decisão
-Criar a **v0.5**: execução da rede XOR (2->2->1) **completa** na NPU, camada por camada,
-validando o arquivo `.mem` e a paridade zero-erro antes de implementar estruturas complexas.
+**Por quê.** Três datapaths distintos, zero duplicação de código.
 
 ---
 
-## ADR-006: Re-escopo da v7 para Sparsidade e Eficiência Energética
+## ADR-005 — Marco intermediário v0.5 (fechar o loop antes de escalar)
 
-### Contexto
-Com a migração da quantização/ternarização para todas as versões do roadmap, a v7 (anteriormente
-chamada "Quantized CfC") perdeu seu propósito original.
+**Decisão.** Entre o dot product da v0 e o array sistólico da v1 existe a **v0.5**:
+a rede XOR inteira rodando na NPU, camada por camada, com paridade zero-erro.
 
-### Decisão
-Re-escopar a v7 para **"v7 — Sparsidade & Eficiência Energética (CfC Otimizada)"**, focando em:
-- Indução de pesos nulos (Sparsity QAT) no Rust.
-- Lógica de **Zero-Value Skipping** (pular ciclos com peso 0) e empacotamento denso de bits na NPU.
+**Por quê.** O salto v0→v1 era grande demais; fechar o ciclo completo
+Rust→`.mem`→NPU→paridade primeiro reduz risco.
 
 ---
 
-## ADR-007: Contrato de Memória `.mem` em Texto Hexadecimal Padrão
+## ADR-006 — v7 re-escopada para Sparsidade
 
-### Contexto
-O Rust precisava de um formato simples e universal para enviar os pesos treinados para o
-simulador SystemVerilog.
+**Decisão.** v7 = **Sparsidade & Eficiência Energética**: indução de pesos nulos (Sparsity QAT)
++ Zero-Value Skipping e empacotamento denso (16 pesos ternários/palavra) na NPU.
 
-### Decisão
-Usar arquivos em formato de texto hexadecimal legíveis nativamente pelo `$readmemh` do Verilog,
-com um cabeçalho de palavras contendo o número de camadas e a topologia (ver [MEM_FORMAT.md](MEM_FORMAT.md)).
+**Por quê.** Com a quantização distribuída ao longo de todo o roadmap, a v7 perdeu
+seu propósito original ("CfC quantizada").
 
 ---
 
-## ADR-008: Arquitetura Desacoplada de Visualização & Observabilidade
+## ADR-007 — Contrato `.mem` em texto hexadecimal
 
-### Contexto
-Para demonstrar, depurar e comparar a execução de redes neurais e aceleração em hardware (Pilar 3 — Co-Design Benchmarking),
-surgiu a necessidade de ferramentas gráficas ricas (grafos de rede via Cytoscape/ELK, dashboards de métricas via ECharts,
-inspetor de arquivos `.mem` e mapeamento interativo software ↔ NPU). Existia o risco de poluir o núcleo matemático da biblioteca
-com bibliotecas web, serialização JSON e conexões WebSocket.
+**Decisão.** Exportação de pesos em arquivos de texto hex legíveis nativamente pelo
+`$readmemh`, com cabeçalho de topologia. Spec: [MEM_FORMAT.md](MEM_FORMAT.md).
 
-### Alternativas Consideradas
-- **Embutir visualização diretamente no core**: adicionar métodos de exportação web, endpoints HTTP ou clientes WebSocket dentro de `tars-core`.
-  *Rejeitado*: violaria os princípios de código enxuto, quebraria a compatibilidade futura com `no_std`, aumentaria o tempo de compilação
-  e traria dependências externas indesejadas para um runtime TinyML.
-- **Visualizador totalmente desconectado sem protocolo formal**: gerar saídas ad-hoc de texto parseadas por scripts soltos em Python/JS.
-  *Rejeitado*: frágil a mudanças de formato e sem garantias de tipagem ou evolução controlada.
-- **Protocolo de observabilidade agnóstico em crate dedicada (`tars-viz-protocol`) com separação estrita de crates**:
-  o visualizador depende do core; o core NUNCA depende do visualizador.
+**Por quê.** Formato universal, zero parser customizado, comentários `//` ignorados
+pelo próprio Verilog.
 
-### Decisão
-Adotar a **arquitetura desacoplada com regra de dependência unidirecional** (ver [VISUALIZATION.md](VISUALIZATION.md)):
-1. O runtime matemático (`tars-core`) permanece puro, sem qualquer dependência web, JSON ou de rede, mantendo compatibilidade com `no_std`.
-2. Criar uma crate intermediária de tipos agnósticos (`tars-viz-protocol`) contendo representações canônicas (`GraphNode`, `ModelGraph`, `BenchmarkRecord`, etc.).
-3. Desenvolver o visualizador web e o servidor em crates e diretórios separados (`crates/tars-viz-web`, `crates/tars-viz-server`).
-4. Permitir que o visualizador seja completamente removido do repositório sem impactar a compilação ou execução do core (Teste da Deleção Total).
+---
 
-### Consequências
-- A biblioteca central pode ser instalada com `cargo add tars` em sua forma mais enxuta possível.
-- Usuários que desejam a interface gráfica podem instalar a ferramenta separadamente (`cargo install tars-viz`) ou rodá-la no monorepo (`cargo run -p tars-viz-server`).
-- A visualização ganha liberdade total para construir interfaces avançadas (inspeção hierárquica LOD 1 a 5, co-design lado a lado software ↔ NPU, inspeção bit a bit de `.mem`) sem degradar a pureza do motor de aprendizado.
+## ADR-008 — Visualização desacoplada do core
+
+**Decisão.** O visualizador (`tars-viz`) é ferramenta externa; regra de dependência
+**unidirecional**: visualizador depende do core, o core **nunca** depende do visualizador.
+
+**Por quê.** Web/JSON/WebSocket dentro do `tars-core` quebraria `no_std` e a pureza
+do runtime TinyML. O core deve sobreviver à deleção total do visualizador
+(*Teste da Deleção Total*).
+
+**Consequências.** Crates separadas: `tars-viz-protocol` (tipos agnósticos),
+`tars-viz-server`, `tars-viz-web`. O core instala limpo via `cargo add tars`.
+
+---
+
+## ADR-009 — NPU em camadas: blocos comuns estáveis + engines especializados
+
+> Decisão central de arquitetura de hardware. Vale para toda a evolução v0 → v8.
+
+**Decisão.** A NPU é uma **composição**, não um bloco único:
+
+```text
+                    TARS NPU (top-level)
+                       │
+           ┌───────────┼───────────┐
+           ▼           ▼           ▼
+        linear      conv         cfc          ← engines (o que muda)
+        engine      engine      engine
+           │           │           │
+           └─────┬─────┴─────┬─────┘
+                 ▼           ▼
+              MAC unit     SFU             ← blocos comuns (o que fica)
+              memória / saturação / quantização
+```
+
+1. **Blocos comuns** — `mac_unit`, aritmética/saturação, memória, SFU, interfaces.
+   Estabilizam e são reaproveitados por **todas** as versões.
+2. **Engines especializados** — `dot → linear → conv → ode → cfc`. Cada um nasce
+   apenas quando o roadmap pede, **sempre reusando os blocos comuns** (o CfC não
+   reimplementa MAC, memória nem Sigmoid; acrescenta só estado `h`, `Δt` e `exp(-x)`).
+
+**A regra para qualquer nova demanda de hardware:**
+
+> **Isso muda apenas configuração/dimensões/precisão — ou introduz uma operação
+> fisicamente nova?**
+
+| Mudança | Tratamento | Exemplos |
+|---|---|---|
+| Configuração | **Parametrizar** o mesmo engine (`#(.MODE, .IN_FEATURES, ...)`) | 2→6 vira 128→64; Q8.24 vira Ternário |
+| Operação nova | **Novo engine** reaproveitando os blocos comuns | dense→conv (line buffers, janelas 3x3); dense→ODE (estado, realimentação, RK4); ODE→CfC (3 matriciais paralelos + `exp(-x)`) |
+
+**Alternativas rejeitadas.**
+- *Copiar a NPU a cada versão* (`npu_v0.sv` → `npu_v1.sv` → ...): um bug corrigido no MAC
+  precisa ser re-corrigido em todas as cópias. Duplicação.
+- *"NPU universal" monolítica* (`if dense ... if conv ... if cfc ...`): as interfaces reais de
+  CNN/CfC ainda são desconhecidas — complexidade prematura.
+
+**Consequências.**
+- Analogia direta com o software: `Sequential { Vec<AnyModule> }` ↔ `controller + engines +
+  blocos comuns`. Mesma separação de responsabilidades.
+- Estrutura-alvo `npu/{common/, engines/, controller.sv, tars_npu.sv}` — mas **criar arquivos
+  só quando a abstração surgir naturalmente**. Hoje `main.sv` + `tb.sv` bastam.
+- Versões antigas são preservadas pelo **Git** (`git tag v0.1.0`), nunca por
+  `npu_v0_old.sv` / `npu_v0_final2.sv`.
+- **Próximo passo imediato**: nenhuma NPU nova. Evoluir a NPU atual (dot product de 4
+  elementos) no primeiro bloco reutilizável — um `dot_engine` genérico. `linear_engine` só depois.
