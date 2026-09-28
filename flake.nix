@@ -25,6 +25,7 @@
         rust-analyzer
         # dependências de sistema do plotters
         pkg-config
+        graphviz
         fontconfig
       ];
 
