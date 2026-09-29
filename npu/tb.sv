@@ -4,37 +4,37 @@ module tb;
   logic rst;
   logic start;
 
-  logic signed [31:0] bias;
   logic signed [31:0] result;
   logic done;
   npu #(
-      .N(4)
+      .N(2)
   ) dut (
       .clk(clk),
       .rst(rst),
       .start(start),
-      .bias(bias),
       .done(done),
       .result(result)
   );
 
   always #5 clk = ~clk;
+  logic signed [31:0] data[8];
 
   initial begin
-    clk   = 0;
-    rst   = 1;
-    start = 0;
-    bias  = 0;
-    #10;
-    rst = 0;
-
-    $readmemh("activations.mem", dut.act);
+    clk = 0;
+    $readmemh("bias.mem", dut.bias);
     $readmemh("weights.mem", dut.weights);
-
-    bias  = 7;
-    start = 1;
-    wait (done);
-    $display("the result is %0d\n", result);
+    $readmemh("activations.mem", data);
+    for (int i = 0; i < 8; i += 2) begin
+      rst   = 1;
+      start = 0;
+      #10;
+      rst = 0;
+      dut.act[0] = data[i];
+      dut.act[1] = data[i+1];
+      start = 1;
+      wait (done);
+      $display("entries: %0d %0d and the result is %0d\n", data[i], data[i+1], result);
+    end
     $finish;
   end
 endmodule
