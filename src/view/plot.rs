@@ -11,19 +11,17 @@ use std::io::Result;
 #[derive(Clone, Debug)]
 pub struct Perceptron {
     id: usize,
-    weight: f32,
-    bias: f32,
 }
 
 impl Perceptron {
-    pub fn new(id: usize, weight: f32, bias: f32) -> Self {
-        Self { id, weight, bias }
+    pub fn new(id: usize) -> Self {
+        Self { id }
     }
 }
 
 impl fmt::Display for Perceptron {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "H{}", self.id)
+        write!(f, "")
     }
 }
 
@@ -48,9 +46,6 @@ impl NetGraph {
             indices: Default::default(),
         }
     }
-
-    /* Note:
-     */
 
     pub fn to_dot(&self) -> String {
         format!("{}", Dot::new(&self.graph))
