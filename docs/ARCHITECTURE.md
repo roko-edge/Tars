@@ -1,94 +1,175 @@
-# tars-ml — Arquitetura de Co-Design Hardware/Software
+# Architecture
 
-`tars-ml` é uma biblioteca **TinyML de Co-Design Hardware/Software** construída do zero
-para rodar redes neurais pequenas em hardware ultra-restrito (MCUs, FPGAs, ASICs),
-onde PyTorch/GPUs não entram.
+The repository contains one Rust package and one SystemVerilog prototype. They share
+the repository but do not yet share a compatible numeric representation or model
+format.
 
----
-
-## Visão Geral em 3 Pilares
+## Repository structure
 
 ```text
- ┌──────────────────────────────────────────────────────────────────────────┐
- │                        tars-ml (Plataforma TinyML)                       │
- ├────────────────────────────┬────────────────────────────┬────────────────┤
- │ PILAR 1: Engine Rust (2024)│ PILAR 2: IP Core NPU       │ PILAR 3:       │
- │ (Treino, QAT & Runtime)    │ (SystemVerilog)            │ Observabilidade│
- │                            │                            │                │
- │ • Zero dependências de ML  │ • Em camadas (ADR-009)     │ • Ferramenta   │
- │ • Treino QAT nativo        │ • Parametrizado            │   externa      │
- │   (Q8.24, INT8, Ternário)  │   (`parameter MODE`)       │   (`tars-viz`) │
- │ • Runtime `no_std` portátil│ • Zero-erro de paridade vs.│ • Métricas,    │
- │   para microcontroladores  │   Rust (.mem contract)     │   grafos e LOD │
- └────────────────────────────┴────────────────────────────┴────────────────┘
+Cargo.toml
+src/
+  lib.rs                  Public module exports and Train configuration
+  data.rs                 Training samples
+  math.rs                 Scalar activations and random initialization
+  modules.rs              Module trait and concrete-module enum
+  modules/
+    linear.rs             Dense layer
+    activations.rs        ReLU and sigmoid modules
+    sequential.rs         Ordered module composition
+  optim.rs                Optimizer module exports
+  optim/
+    cost.rs               Mean squared error
+    grad.rs               Finite-difference gradients
+    bgd.rs                Batch gradient descent
+  view.rs                 Visualization module export
+  view/plot.rs            petgraph and Graphviz integration
+  bin/
+    main.rs               Interactive OR/XOR training executable
+    visualization.rs      Hard-coded graph visualization executable
+npu/
+  main.sv                 Parameterized dot-product module
+  tb.sv                   Simulation testbench
+  Makefile                Simulation, waveform, and lint targets
+  activations.mem         Testbench activation values
+  weights.mem             Weight values
 ```
 
----
+## Rust model
 
-## 1. Engine de Treino & Runtime Rust (`tars-core`)
+`Module` defines the inference interface:
 
-- **Zero dependências de ML**: apenas Rust (Edition 2024) e a crate `rand` para pesos iniciais.
-- **Treino QAT (Quantization-Aware Training)**: o modelo já aprende nas limitações
-  aritméticas do hardware target. Três modos: **Q8.24** (âncora 32b fixed-point),
-  **INT8 QAT** e **Ternário QAT** (-1, 0, +1 com STE).
-- **Abstração modular**: `Sequential` com `Vec<AnyModule>` — composição livre de camadas
-  `Linear`, ativações (`Relu`, `Sigmoid`), etc.
-- **Runtime Portátil**: compila para qualquer MCU (ARM Cortex-M, RISC-V, ESP32)
-  em ponto fixo sem depender da NPU física.
-
----
-
-## 2. NPU em camadas em SystemVerilog (ADR-009)
-
-A NPU **não** é uma casca fixa, nem um monólito de `if/else`, nem uma cópia por versão:
-
-```text
-                    TARS NPU (top-level / controller)
-                       │
-           ┌───────────┼───────────┐
-           ▼           ▼           ▼
-        linear      conv         cfc          ← engines especializados
-        engine      engine      engine          (novas operações físicas)
-           │           │           │
-           └─────┬─────┴─────┬─────┘
-                 ▼           ▼
-              MAC unit     SFU             ← blocos comuns reutilizáveis
-              memória / saturação / QAT        (estabilizam no tempo)
+```rust
+pub trait Module {
+    fn forward(&self, input: &[f32]) -> Vec<f32>;
+}
 ```
 
-- **Blocos comuns**: `mac_unit`, registradores de saturação/acumulação,
-  memória, SFU (ativações em hardware: ReLU combinacional, Sigmoid PWL/LUT).
-- **Engines especializados**: entram conforme o roadmap pede
-  (`dot → linear → conv → ode → cfc`), reutilizando 100% dos blocos comuns.
-- **Parametrização por modo**: `npu_core #(.MODE("Q8_24" | "INT8" | "TERNARY"))` adapta o
-  datapath via `generate` (32x32 mult, 8x8 mult, Mux 3:1).
+`AnyModule` provides runtime dispatch over the implemented module types:
 
----
+```rust
+pub enum AnyModule {
+    Linear(Linear),
+    Activation(Activation),
+}
+```
 
-## 3. Observabilidade & Co-Design Benchmarking (`tars-viz`)
+`Sequential` stores an ordered `Vec<AnyModule>`. Its builder methods update the
+expected feature count when a linear layer is appended.
 
-A observabilidade roda como **ferramenta externa/opcional** (ADR-008):
-- $\boxed{\text{visualizer depende do core; core NUNCA depende do visualizer}}$.
-- O `tars-core` permanece limpo para `no_std` (sem HTTP, JSON ou dependências web).
-- **Métricas do Co-Design**:
-  - **Acurácia (%)**: Q8.24 vs. INT8 vs. Ternário.
-  - **Memória (Bytes)**: footprint do arquivo `.mem`.
-  - **Hardware**: LUTs/DSPs e ciclos de clock por inferência no testbench (`tb.sv`).
-  - **Paridade**: zero divergência de bits entre Rust e SystemVerilog.
+```rust
+impl Sequential {
+    pub fn new(input_size: usize) -> Self;
+    pub fn linear(self, output_size: usize) -> Self;
+    pub fn relu(self) -> Self;
+    pub fn sigmoid(self) -> Self;
+}
+```
 
----
+`Linear` stores weights as `Vec<Vec<f32>>`, indexed by output feature and then input
+feature. Biases are stored as `Vec<f32>`.
 
-## Aplicações-Alvo (TinyML Edge)
+```rust
+impl Linear {
+    pub fn new(
+        in_sz: usize,
+        out_sz: usize,
+        weights: Vec<Vec<f32>>,
+        bias: Vec<f32>,
+    ) -> Self;
+    pub fn random(in_sz: usize, out_sz: usize) -> Self;
+}
+```
 
-1. **Healthcare Embarcado**: monitores de ECG/EEG e próteses operando em miliwatts.
-2. **Robótica & Drones**: controle em tempo real lendo IMU com latência sub-milissegundo.
-3. **Indústria 4.0**: manutenção preditiva via análise acústica/vibração 100% offline.
-4. **Cubesats & Aeroespacial**: navegação e atitude com orçamento de energia crítico.
+The remaining training interfaces are:
 
----
+```rust
+impl Data {
+    pub fn new(input: &[f32], target: &[f32]) -> Self;
+}
 
-## O que o `tars-ml` NÃO é
+pub fn cost(model: &Sequential, data: &[Data]) -> f32;
+pub fn num_grad(model: &Sequential, data: &[Data]) -> Grad;
 
-- Não é concorrente do PyTorch/TensorFlow para LLMs ou modelos de servidor.
-- Não é software isolado nem hardware isolado — é a união dos dois via contrato `.mem`.
-- Não usa caixas pretas: toda a matemática e os circuitos são abertos do bit ao algoritmo.
+impl BGD {
+    pub fn new(lr: f32) -> Self;
+    pub fn step(&self, model: &mut Sequential, grad: &Grad);
+}
+```
+
+`cost` computes the mean squared error across output elements and samples.
+`num_grad` computes centered finite differences with `h = 1e-3` for every weight and
+bias. `BGD::step` applies the resulting gradient to each linear layer.
+
+## Training executable
+
+`src/bin/main.rs` performs the following operations:
+
+1. Reads an experiment name from standard input.
+2. Constructs either the OR model (`2 -> 1`) or XOR model (`2 -> 4 -> 1`).
+3. Trains with full-dataset finite-difference gradients.
+4. Prints predictions for the selected truth table.
+5. Writes each linear-layer weight to `npu/weights.mem` using `f32::to_bits()`.
+
+The export loop preserves module order, output-neuron order, and input-weight order.
+It omits biases, dimensions, activation types, and expected outputs.
+
+## Visualization
+
+The visualization code is part of the `tars` package and is exported through
+`tars::view`. `NetGraph` wraps `petgraph::graph::DiGraph<Perceptron, f32>` and exposes
+the following interface:
+
+```rust
+impl NetGraph {
+    pub fn new() -> Self;
+    pub fn to_dot(&self) -> String;
+    pub fn save_dot(&self, path: &str) -> std::io::Result<()>;
+    pub fn add_node(&mut self, p: Perceptron);
+    pub fn add_edge(&mut self, from: usize, to: usize, w: f32);
+    pub fn plot(&self);
+}
+```
+
+Node indices are retained in insertion order. `plot` invokes the external `dot`
+command with fixed input and output paths. The visualization executable constructs a
+graph directly and is not connected to `Sequential`.
+
+## SystemVerilog module
+
+`npu/main.sv` defines `npu`, parameterized by vector length `N`:
+
+```systemverilog
+module npu #(
+    parameter int N
+) (
+    input  logic               clk,
+    input  logic               rst,
+    input  logic               start,
+    input  logic signed [31:0] bias,
+    output logic               done,
+    output logic signed [31:0] result
+);
+```
+
+The module contains internal `weights[N]` and `act[N]` arrays. While `start` is
+asserted, it processes one array element per clock and adds `bias` when processing the
+last element. Multiplication and accumulation use signed 32-bit signals; there is no
+fixed-point scaling, widened accumulator, saturation, or activation function.
+
+`npu/tb.sv` instantiates `N = 4`, loads the internal arrays with `$readmemh`, sets the
+bias input to `7`, waits for `done`, and prints `result`. It does not compare the
+result with an expected value.
+
+## Integration boundary
+
+The two implementations currently disagree at the file boundary:
+
+| Producer or consumer | Interpretation |
+|---|---|
+| Rust executable | Writes each weight as the hexadecimal bits of an IEEE-754 `f32` |
+| SystemVerilog module | Uses each loaded word as a signed 32-bit integer |
+
+Consequently, the generated Rust weights do not represent equivalent numeric values
+inside the NPU. There is no model-topology parser, parity test, or shared inference
+pipeline.

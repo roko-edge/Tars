@@ -1,81 +1,83 @@
-# tars-ml — Status Atual & Próximos Passos
+# Implementation Status
 
-Bússola do projeto: o que existe de fato no código, o que falta para fechar a **v0**,
-e o próximo passo mínimo. *Última atualização*: 26/09/2026 (último commit: `164aa61`).
+The repository is an early experimental implementation. The Rust model and the
+SystemVerilog NPU prototype execute independently and do not currently provide
+numerically equivalent inference.
 
----
+## Rust package
 
-## Onde estamos
-
-**Pré-v0 (Neural Core)** — o esqueleto da rede neural em Rust está de pé e o treino
-básico converge, mas ainda no "modo didático": gradiente numérico, float32 puro.
-Nada do que diferencia o projeto (QAT, exporter, paridade NPU) existe em código ainda.
-
----
-
-## Software (Rust, `src/`)
-
-| Componente | Estado | Observação |
+| Component | Status | Implementation |
 |---|---|---|
-| Rede multicamada | Sim | `Sequential` com builder (`.linear()`, `.relu()`, `.sigmoid()`), `AnyModule` |
-| Forward pass | Sim | Trait `Module` (`Linear`, `Activation`) |
-| Ativações | Sim | Sigmoid (`math.rs`), ReLU |
-| Custo MSE | Sim | `cost()` em `lib.rs` |
-| Otimizador | Sim | Apenas BGD |
-| Gradiente | Parcial | **Diferenças finitas** (`num_grad`, h=1e-3) — não analítico |
-| Matrizes contíguas | Não | `Linear` usa `Vec<Vec<f32>>` (layout não-linear) |
-| Testes | Não | Zero `#[test]` |
+| Sequential model | Implemented | `Sequential` stores `Vec<AnyModule>` |
+| Dense layer | Implemented | `Linear` uses `Vec<Vec<f32>>` weights and `Vec<f32>` biases |
+| Activations | Implemented | ReLU and sigmoid |
+| Loss | Implemented | Mean squared error over outputs and samples |
+| Gradient | Implemented | Centered finite differences with `h = 1e-3` |
+| Optimizer | Implemented | Batch gradient descent |
+| Experiments | Implemented | Interactive OR and XOR selection |
+| Weight output | Partial | Writes only IEEE-754 weight bits to `npu/weights.mem` |
+| Automated tests | Not implemented | No Rust `#[test]` functions are present |
 
-- `bin/main.rs`: treino de demonstração em dataset sintético de regressão (2→6→2).
-- `view/plot.rs`: protótipo inicial com petgraph, não integrado ao modelo.
-- Inicialização de pesos: `rand::random()` uniforme (sem He/Xavier) — aceitável por ora.
+The Rust implementation uses `f32`, `std`, and dynamically allocated vectors. It has
+no analytical backpropagation, quantization-aware training, fixed-point arithmetic,
+or `no_std` runtime.
 
-## Hardware (`npu/`)
+## Visualization
 
-| Componente | Estado | Observação |
+The package exports a `view` module backed by `petgraph`. The visualization binary
+creates a hard-coded graph, saves DOT text, and invokes Graphviz to generate a PNG.
+It does not inspect or render a `Sequential` model. `plotters` and `petgraph` are
+unconditional package dependencies.
+
+## SystemVerilog prototype
+
+| Component | Status | Implementation |
 |---|---|---|
-| Dot product 4 elementos | Sim | `main.sv`: FSM `start`/`done`, registrador de bias |
-| Testbench | Sim | `tb.sv` funcional |
-| Acumulador 48b + saturação | Não | Acumulador atual é de 32 bits |
-| SFU (ReLU/Sigmoid) | Não | Não existe |
-| `parameter MODE` | Não | Só existe a variante binária |
+| Dot product | Implemented | One signed 32-bit product and accumulation per clock |
+| Vector length | Parameterized | `N`, instantiated as `4` by the testbench |
+| Bias | Implemented | External signed 32-bit input added to the final result |
+| Control | Implemented | `rst`, `start`, and `done` signals |
+| Memory loading | Partial | Testbench loads arrays through hierarchical access |
+| Result validation | Not implemented | Testbench prints without asserting an expected value |
+| Waveform output | Not implemented | Testbench has no `$dumpfile` or `$dumpvars` calls |
 
-- `Makefile` referencia `main2.sv`/`tb2.sv` (variante ternária) que **não existem no
-  repositório** → alvos `sim2`, `test`, `wave2`, `lint` quebram.
-- `npu/README.md` instrui `cd simple` (pasta inexistente).
+The module has no numeric-mode parameter, widened accumulator, saturation logic,
+hardware activation function, model controller, or layer engine.
 
----
+## Rust and NPU compatibility
 
-## Lacunas para fechar a v0
+The Rust executable writes weights with `f32::to_bits()`. The SystemVerilog module
+interprets loaded words as signed integers. Biases and topology are not exported, and
+the testbench does not consume Rust-generated inputs or expected outputs. Bit-exact
+parity is therefore not defined or tested.
 
-| # | Item | Bloqueia |
+The checked-in NPU configuration also expects four weights, while the checked-in
+`weights.mem` contains two words.
+
+## Command status
+
+| Command | Status | Notes |
 |---|---|---|
-| 1 | **Backprop analítico** (derivadas `σ' = σ(1-σ)`, `ReLU'`; backward pelo `Sequential`) | Tudo — QAT, XOR, escala de treino. Hoje cada parâmetro custa 2 forward completos |
-| 2 | Testes automatizados (`cargo test`) | Refatorações seguras |
-| 3 | QAT Q8.24 (depois INT8/Ternário) com STE | Matriz tripla — núcleo do projeto |
-| 4 | `exporter.rs` → `.mem` | Loop co-design (v0.5) |
-| 5 | NPU: acumulador 48b, saturação, SFU ReLU, `MODE` | Paridade 3 modos |
-| 6 | Validação formal XOR 2→2→1 (MSE < 0.01) | DoD v0 |
+| `cargo build` | Available | Builds the Rust package and binaries |
+| `cargo run --bin main` | Available | Prompts for OR or XOR and overwrites `npu/weights.mem` |
+| `cargo run --bin visualization` | Available | Requires Graphviz and writes fixed artifact paths |
+| `cargo test` | Available | No automated tests are defined |
+| `make sim` | Partial | Runs the testbench without pass/fail validation; current weights are incomplete |
+| `make sim2` | Broken | References absent `main2.sv` and `tb2.sv` |
+| `make test` / `make all` | Broken | Depend on `sim2` |
+| `make wave` | Broken | Expects a VCD file that the testbench does not generate |
+| `make wave2` | Broken | Depends on absent ternary sources and waveform output |
+| `make lint` | Broken | Its second invocation references absent ternary sources |
+| `make clean` | Available | Removes NPU build artifacts |
 
----
+## Known technical limitations
 
-## Próximos passos (ordem sugerida)
-
-1. **Backprop analítico** — substituir `num_grad`. Maior alavancação do projeto.
-2. **XOR 2→2→1** em float com backprop analítico → fecha o critério de convergência da v0.
-3. **QAT Q8.24** com STE → depois INT8 e Ternário.
-4. **`exporter.rs`** no formato [MEM_FORMAT.md](MEM_FORMAT.md).
-5. **NPU**: evoluir o dot product atual num **`dot_engine` genérico** (ADR-009) — sem
-   acumulador 48b/saturação/SFU antes disso.
-6. **v0.5**: `tb.sv` executa a rede XOR inteira camada a camada, paridade zero-erro.
-
----
-
-## Pendências de ambiente (correção manual humana)
-
-1. **`npu/Makefile`**: remover/adaptar alvos que dependem de `main2.sv`/`tb2.sv` ausentes.
-2. **`npu/README.md`**: remover `cd simple`; documentar alvos reais do Makefile.
-3. **`.clang-format`** na raiz: legado da era C++ — decidir remoção.
-4. **`README.txt`** (raiz): apontar para `docs/README.md` e o fluxo Cargo.
-5. **Build fora do `nix develop`**: `plotters` exige `fontconfig` do sistema
-   (via pkg-config). Dentro do shell do flake funciona.
+- Model dimensions are not validated against input, target, weight, or bias lengths.
+- `AnyModule::as_linear` and `as_mut_linear` panic when called for an activation.
+- Training cost scales poorly because each parameter requires two complete cost
+  evaluations per gradient step.
+- Weight initialization uses unscaled uniform random values.
+- The visualization uses fixed paths and reports Graphviz process failures only at
+  runtime.
+- The NPU uses internal arrays loaded directly by the testbench rather than an
+  external memory interface.

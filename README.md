@@ -1,53 +1,67 @@
-# tars-ml
+# tars
 
-**TinyML Hardware/Software Co-Design** library built from scratch: small neural networks trained in Rust (Edition 2024, zero ML dependencies), executed on a parameterized SystemVerilog NPU or on microcontrollers through a fixed-point runtime.
+`tars` is an experimental neural-network implementation written in Rust alongside a
+standalone SystemVerilog dot-product prototype. The Rust code provides dense layers,
+ReLU and sigmoid activations, sequential model composition, mean squared error,
+finite-difference gradients, and batch gradient descent.
 
----
+The Rust and SystemVerilog implementations are not currently integrated. In
+particular, the Rust weight output uses IEEE-754 bit patterns while the NPU performs
+signed integer arithmetic.
 
-## Environment
+## Requirements
 
-With Nix (recommended — includes hardware tooling):
+The Nix flake defines development shells for `x86_64-linux`:
 
 ```bash
-nix develop             # Rust + hardware tools + support
-nix develop .#hardware  # only iverilog / verilator / gtkwave
+nix develop             # Rust, NPU, Nix, and visualization tools
+nix develop .#rust      # Rust and visualization tools
+nix develop .#hardware  # Icarus Verilog, Verilator, GTKWave, and Verible
 ```
 
-Without Nix: install [rustup](https://rustup.rs). Note: outside the Nix environment, `cargo build` fails when building `plotters`, which requires the `fontconfig` system library.
+Without Nix, install a Rust 2024 toolchain and the system dependencies required by
+`plotters`. Graphviz is required by the visualization prototype. The NPU commands
+require GNU Make, Icarus Verilog, Verilator, and GTKWave as applicable.
 
-## Build and Run (Rust)
+## Rust
 
 ```bash
 cargo build
-cargo run --bin main           # demo training
-cargo run --bin visualization  # visualization prototype
+cargo run --bin main
+cargo run --bin visualization
 cargo test
 ```
 
-## NPU (SystemVerilog)
+`main` prompts for the `or` or `xor` experiment, trains the selected model, prints
+its predictions, and overwrites `npu/weights.mem`. The output file contains only
+linear-layer weights; it does not contain biases or model topology.
+
+`visualization` writes `src/view/artifacts/graph.dot` and invokes Graphviz to create
+`src/view/artifacts/network.png`. It renders a hard-coded graph rather than the
+trained model.
+
+There are currently no automated Rust tests.
+
+## SystemVerilog
+
+From `npu/`:
 
 ```bash
-cd npu
-make sim     # builds with iverilog (-g2012) and runs in the terminal
-make wave    # opens generated waveforms in GTKWave
-make lint    # static analysis with Verilator
-make clean   # cleans the build/ directory
+make sim
+make clean
 ```
+
+`make sim` compiles `main.sv` and `tb.sv` and prints the result signal. The
+testbench does not assert an expected result, and the checked-in `weights.mem` does
+not provide all four values expected by the configured module. Other Make targets
+are currently incomplete; see [`npu/README.md`](npu/README.md).
 
 ## Documentation
 
-Full index at [docs/README.md](docs/README.md). Main documents:
-
-| Document | Content |
+| Document | Scope |
 |---|---|
-| [docs/STATUS.md](docs/STATUS.md) | Current codebase status and next steps |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture and the three core pillars |
-| [docs/ROADMAP_NPU.md](docs/ROADMAP_NPU.md) | Evolution from v0 to v8 with completion criteria |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Architecture Decision Records (ADRs) |
-
-## Principles
-
-1. **100% human-written code** — AI does not write code in this repository ([AGENTS.md](AGENTS.md)).
-2. **Zero ML libraries** — algebra, optimizers, and activation functions are implemented from scratch.
-3. **Training at target precision (QAT)** — Q8.24, INT8, and ternary; never post-training quantization.
-4. **Zero-error parity** — whatever Rust computes, the NPU reproduces bit-for-bit.
+| [`docs/STATUS.md`](docs/STATUS.md) | Implemented features and known limitations |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Current Rust and SystemVerilog structure |
+| [`docs/MEM_FORMAT.md`](docs/MEM_FORMAT.md) | Current memory-file behavior |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Implemented architectural decisions |
+| [`AGENTS.md`](AGENTS.md) | Repository policy for automated agents |
