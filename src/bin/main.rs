@@ -1,8 +1,6 @@
 use std::error::Error;
 use tars::*;
 mod experiments;
-use std::fs::File;
-use std::io::Write;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut train = experiments::choose();
@@ -26,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    for d in train.dataset {
+    for d in &train.dataset {
         println!(
             "Para as entradas: {:?} o modelo retorna: {:?} esperado:{:?} ",
             d.input,
@@ -34,18 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             d.target
         );
     }
-    let mut file = File::create("npu/weights.mem")?;
-    for module in &train.model.modules {
-        match module {
-            AnyModule::Linear(linear) => {
-                for neuron in &linear.weights {
-                    for weight in neuron {
-                        writeln!(file, "{:08X}", weight.to_bits())?;
-                    }
-                }
-            }
-            AnyModule::Activation(_) => {}
-        }
-    }
+    export_model(&train.model)?;
+    export_data(&train.dataset)?;
     Ok(())
 }
