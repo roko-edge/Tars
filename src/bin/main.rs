@@ -4,6 +4,7 @@ mod experiments;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut train = experiments::choose();
+    let step = (train.epochs / 20).max(1);
 
     let optimizer = BGD::new(train.lr);
     let mut prev_cost = cost(&train.model, &train.dataset);
@@ -13,7 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let grad = backward(&train.model, &train.dataset);
         optimizer.step(&mut train.model, &grad);
         let curr_cost = cost(&train.model, &train.dataset);
-        if i % (train.epochs / 20) == 0 {
+        if i % step == 0 {
             println!(
                 "epoch: {:06.0}, cost is:{:014.8}, {:07.3}% better",
                 i,

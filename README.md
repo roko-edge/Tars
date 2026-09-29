@@ -1,4 +1,20 @@
-# tars
+<h1 align="center">
+  <img src="docs/assets/tars-mascot.svg" alt="Tars — geometric robot logo" width="232" height="294" />
+</h1>
+
+<p align="center">
+  Experimental neural networks in Rust.<br />
+  A standalone dot-product prototype in SystemVerilog.
+</p>
+
+<p align="center">
+  <a href="#requirements">Getting started</a> &middot;
+  <a href="#rust">Rust</a> &middot;
+  <a href="#systemverilog">SystemVerilog</a> &middot;
+  <a href="#documentation">Documentation</a>
+</p>
+
+---
 
 `tars` is an experimental neural-network implementation written in Rust alongside a
 standalone SystemVerilog dot-product prototype. The Rust code provides dense layers,
