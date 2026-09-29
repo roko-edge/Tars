@@ -1,29 +1,26 @@
 # tars-ml
 
-Biblioteca **TinyML de Co-Design Hardware/Software** construída do zero: redes neurais
-pequenas treinadas em Rust (Edition 2024, zero dependências de ML), executadas em uma
-NPU parametrizada em SystemVerilog ou em microcontroladores via runtime em ponto fixo.
+**TinyML Hardware/Software Co-Design** library built from scratch: small neural networks trained in Rust (Edition 2024, zero ML dependencies), executed on a parameterized SystemVerilog NPU or on microcontrollers through a fixed-point runtime.
 
 ---
 
-## Ambiente
+## Environment
 
-Com Nix (recomendado — inclui ferramentas de hardware):
+With Nix (recommended — includes hardware tooling):
 
 ```bash
-nix develop             # Rust + ferramentas de hardware + suporte
-nix develop .#hardware  # apenas iverilog / verilator / gtkwave
+nix develop             # Rust + hardware tools + support
+nix develop .#hardware  # only iverilog / verilator / gtkwave
 ```
 
-Sem Nix: instale [rustup](https://rustup.rs). Nota: fora do ambiente Nix, `cargo build`
-falha em `plotters`, que exige a biblioteca de sistema `fontconfig`.
+Without Nix: install [rustup](https://rustup.rs). Note: outside the Nix environment, `cargo build` fails when building `plotters`, which requires the `fontconfig` system library.
 
-## Compilar e executar (Rust)
+## Build and Run (Rust)
 
 ```bash
 cargo build
-cargo run --bin main           # treino de demonstração
-cargo run --bin visualization  # protótipo de visualização
+cargo run --bin main           # demo training
+cargo run --bin visualization  # visualization prototype
 cargo test
 ```
 
@@ -31,26 +28,26 @@ cargo test
 
 ```bash
 cd npu
-make sim     # compila com iverilog (-g2012) e executa no terminal
-make wave    # abre as ondas geradas no GTKWave
-make lint    # análise estática com Verilator
-make clean   # limpa a pasta build/
+make sim     # builds with iverilog (-g2012) and runs in the terminal
+make wave    # opens generated waveforms in GTKWave
+make lint    # static analysis with Verilator
+make clean   # cleans the build/ directory
 ```
 
-## Documentação
+## Documentation
 
-Índice completo em [docs/README.md](docs/README.md). Principais:
+Full index at [docs/README.md](docs/README.md). Main documents:
 
-| Documento | Conteúdo |
+| Document | Content |
 |---|---|
-| [docs/STATUS.md](docs/STATUS.md) | Estado atual do código e próximos passos |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura e os 3 pilares |
-| [docs/ROADMAP_NPU.md](docs/ROADMAP_NPU.md) | Evolução v0 a v8 com critérios de conclusão |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Registro de decisões (ADRs) |
+| [docs/STATUS.md](docs/STATUS.md) | Current codebase status and next steps |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture and the three core pillars |
+| [docs/ROADMAP_NPU.md](docs/ROADMAP_NPU.md) | Evolution from v0 to v8 with completion criteria |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Architecture Decision Records (ADRs) |
 
-## Princípios
+## Principles
 
-1. **Código 100% humano** — IAs não escrevem código neste repositório ([AGENTS.md](AGENTS.md)).
-2. **Zero bibliotecas de ML** — álgebra, otimizadores e ativações feitos à mão.
-3. **Treino na precisão alvo (QAT)** — Q8.24, INT8 e Ternário, nunca pós-treino.
-4. **Paridade zero-erro** — o que o Rust calcula, a NPU reproduz bit a bit.
+1. **100% human-written code** — AI does not write code in this repository ([AGENTS.md](AGENTS.md)).
+2. **Zero ML libraries** — algebra, optimizers, and activation functions are implemented from scratch.
+3. **Training at target precision (QAT)** — Q8.24, INT8, and ternary; never post-training quantization.
+4. **Zero-error parity** — whatever Rust computes, the NPU reproduces bit-for-bit.
