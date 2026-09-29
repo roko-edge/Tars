@@ -6,7 +6,6 @@ build/
 
 src/view/artifacts/*
 
-
 # Added by cargo
 
 /target
