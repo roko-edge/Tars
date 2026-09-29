@@ -2,6 +2,7 @@ build/
 .cache/
 .direnv/
 .omo/
+./npu/*.mem
 
 src/view/graph/*
 

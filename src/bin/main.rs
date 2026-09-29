@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("epoch: 000000, cost is:{:014.8}", prev_cost);
 
     for i in 1..=train.epochs {
-        let grad = num_grad(&train.model, &train.dataset);
+        let grad = backward(&train.model, &train.dataset);
         optimizer.step(&mut train.model, &grad);
         let curr_cost = cost(&train.model, &train.dataset);
         if i % (train.epochs / 20) == 0 {

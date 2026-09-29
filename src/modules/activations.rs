@@ -1,4 +1,4 @@
-use crate::math::{relu, sigmoid};
+use crate::math::{relu, sigmoidf};
 use crate::modules::Module;
 #[derive(Clone, Copy, Debug)]
 pub enum Activation {
@@ -11,7 +11,7 @@ impl Module for Activation {
         for i in 0..input.len() {
             output[i] = match self {
                 Activation::Relu => relu(input[i]),
-                Activation::Sigmoid => sigmoid(input[i]),
+                Activation::Sigmoid => sigmoidf(input[i]),
             }
         }
         output
