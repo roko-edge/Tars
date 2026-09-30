@@ -42,12 +42,15 @@ pub fn backward(model: &Sequential, data: &[Data]) -> Grad {
 
     for sample in data {
         let acts = forward_memoria(model, &sample.input);
-        let p = acts.last().unwrap();
 
         let mut delta = vec![0.0; sample.target.len()];
 
         for i in 0..sample.target.len() {
-            delta[i] = cost_derivative(p[i], sample.target[i], sample.target.len());
+            delta[i] = cost_derivative(
+                acts.last().unwrap()[i],
+                sample.target[i],
+                sample.target.len(),
+            );
         }
 
         for m in (0..model.modules.len()).rev() {

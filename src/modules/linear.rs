@@ -1,5 +1,6 @@
 pub use crate::math::random_mat;
 use crate::modules::Module;
+
 #[derive(Clone, Debug)]
 pub struct Linear {
     pub in_sz: usize,

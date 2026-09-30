@@ -1,3 +1,6 @@
+pub mod tensor;
+pub use tensor::*;
+
 pub fn random_vec(len: usize) -> Vec<f32> {
     let mut vector = vec![0.0; len];
     for e in &mut vector {
