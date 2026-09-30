@@ -1,4 +1,6 @@
-use core::fmt;
+use crate::AnyModule;
+use crate::sequential::Sequential;
+use core::{fmt, num};
 use petgraph::dot::Dot;
 use petgraph::graph::DiGraph;
 use petgraph::prelude::*;
@@ -21,7 +23,7 @@ impl Perceptron {
 
 impl fmt::Display for Perceptron {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "")
+        write!(f, "{}", self.id)
     }
 }
 
@@ -65,6 +67,35 @@ impl NetGraph {
         let from_idx = self.indices[from];
         let to_idx = self.indices[to];
         self.graph.add_edge(from_idx, to_idx, w);
+    }
+
+    pub fn sequential_to_graph(&mut self, model: &Sequential, input: &[f32]) {
+        for i in 0..input.len() {
+            self.add_node(Perceptron::new(i));
+        }
+
+        let mut number_neurons = input.len();
+        let mut previous_layer_start = 0;
+
+        for module in &model.modules {
+            match module {
+                AnyModule::Linear(linear) => {
+                    let current_layer_start = number_neurons;
+
+                    for o in &linear.weights {
+                        let p = Perceptron::new(number_neurons);
+                        self.add_node(p);
+
+                        for (w, &weight) in o.iter().enumerate() {
+                            self.add_edge(previous_layer_start + w, number_neurons, weight);
+                        }
+                        number_neurons += 1;
+                    }
+                    previous_layer_start = current_layer_start;
+                }
+                AnyModule::Activation(_) => {}
+            }
+        }
     }
 
     pub fn plot(&self) {
