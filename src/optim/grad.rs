@@ -94,10 +94,10 @@ pub fn backward(model: &Sequential, data: &[Data]) -> Grad {
 
     for m in 0..grad.modules.len() {
         match &model.modules[m] {
-            AnyModule::Linear(l) => {
-                let g = grad.modules[m].as_mut_linear();
+            AnyModule::Linear(linear) => {
+                let g = linear;
 
-                for r in &mut g.weights {
+                for r in &g.weights {
                     for v in r {
                         *v /= n;
                     }
@@ -107,7 +107,7 @@ pub fn backward(model: &Sequential, data: &[Data]) -> Grad {
                     *b /= n;
                 }
             }
-            AnyModule::Activation(a) => {}
+            AnyModule::Activation(_) => {}
         }
     }
 
