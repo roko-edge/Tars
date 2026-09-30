@@ -96,18 +96,16 @@ pub fn backward(model: &Sequential, data: &[Data]) -> Grad {
     let n = data.len() as f32;
 
     for m in 0..grad.modules.len() {
-        match &model.modules[m] {
+        match &mut grad.modules[m] {
             AnyModule::Linear(linear) => {
-                let g = linear;
-
-                for r in &g.weights {
-                    for v in r {
-                        *v /= n;
+                for output_neuron in &mut linear.weights {
+                    for weight in output_neuron {
+                        *weight /= n;
                     }
                 }
 
-                for b in &mut g.bias {
-                    *b /= n;
+                for bias in &mut linear.bias {
+                    *bias /= n;
                 }
             }
             AnyModule::Activation(_) => {}
