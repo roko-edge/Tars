@@ -1,9 +1,9 @@
 use std::error::Error;
-use tars::*;
+use tars::{view::graph::NetGraph, *};
 mod experiments;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut train = experiments::choose();
+    let mut train = experiments::xor::train();
     let step = (train.epochs / 20).max(1);
 
     let optimizer = BGD::new(train.lr);
@@ -33,7 +33,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             d.target
         );
     }
-    export_model(&train.model)?;
-    export_data(&train.dataset)?;
+
+    // export_model(&train.model)?;
+    // export_data(&train.dataset)?;
+
+    // Export the network topology to a .png
+    let mut net = NetGraph::new();
+    net.network_to_graph(&train.model, &train.dataset[0].input);
     Ok(())
 }

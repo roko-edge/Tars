@@ -1,1 +1,1 @@
-pub mod plot;
+pub mod graph;

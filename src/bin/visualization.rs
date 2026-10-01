@@ -1,7 +1,10 @@
+use std::env;
 use std::io::Result;
-use std::process::Command;
 use tars::Sequential;
-use tars::view::plot::*;
+use tars::view::graph::*;
+
+// TODO Create a module to dot to png handler
+// TODO Move dot compilation flags to a separate structure
 
 /*
 Proposed design:
@@ -24,41 +27,16 @@ fn main() -> Result<()> {
     let input = vec![1.0, 2.0, 3.0];
 
     let mut net = NetGraph::new();
-    net.sequential_to_graph(&model, &input);
 
-    let _dot = net.to_dot();
-    net.save_dot("src/view/artifacts/graph.dot")?;
+    net.network_to_graph(&model, &input);
 
-    // TODO Create images dir and add it to .gitignore
-    // TODO Create a module to dot to png handler
-    // TODO Move dot compilation flags to a separate structure
+    let source = "src/view/artifacts/graph.dot";
+    let destiny = "src/view/artifacts/network.png";
 
-    let out = Command::new("dot")
-        .arg("src/view/artifacts/graph.dot")
-        .arg("-Grankdir=LR")
-        .arg("-Gsplines=true")
-        .arg("-Tpng")
-        .arg("-o")
-        .arg("src/view/artifacts/network.png")
-        .status()
-        .expect("Coulnd't execut the 'dot' command. Check if Graphviz is installed on your PATH");
-
-    let input_format: &str = ".dot";
-    let output_format: &str = ".png";
-
-    if !out.success() {
-        eprintln!(
-            "Couldn't convert from {} to {}",
-            input_format, output_format
-        );
-    }
-
-    println!(
-        "Successfully converted from {} to {} - Check src/bin/artifacts/network.png",
-        input_format, output_format
-    );
+    net.graph_to_dot();
+    net.save_dot(source)?;
+    net.export_dot(source, destiny);
 
     net.plot();
-
     Ok(())
 }
