@@ -9,7 +9,14 @@ format.
 ```text
 Cargo.toml
 src/
-  lib.rs                  Public module exports and Train configuration
+  lib.rs                  Public module exports and re-exports
+  train.rs                Shared Train configuration
+  experiments/
+    mod.rs                Public experiment modules
+    experiment_type.rs    OR/XOR identifiers
+    or.rs                 OR configuration factory
+    xor.rs                XOR configuration factory
+    local.rs.template     Incomplete local-experiment starting point
   data.rs                 Training samples
   math.rs                 Scalar activations and random initialization
   modules.rs              Module trait and concrete-module enum
@@ -25,7 +32,7 @@ src/
   view.rs                 Visualization module export
   view/plot.rs            petgraph and Graphviz integration
   bin/
-    main.rs               Interactive OR/XOR training executable
+    main.rs               Training executable with source-selected experiment
     visualization.rs      Hard-coded graph visualization executable
 npu/
   main.sv                 Parameterized dot-product module
@@ -105,14 +112,19 @@ bias. `BGD::step` applies the resulting gradient to each linear layer.
 
 `src/bin/main.rs` performs the following operations:
 
-1. Reads an experiment name from standard input.
-2. Constructs either the OR model (`2 -> 1`) or XOR model (`2 -> 4 -> 1`).
-3. Trains with full-dataset finite-difference gradients.
-4. Prints predictions for the selected truth table.
-5. Writes each linear-layer weight to `npu/weights.mem` using `f32::to_bits()`.
+1. Calls `experiments::xor::train()` to construct the selected `Train` configuration.
+2. Prints its `ExperimentType` identifier and initial MSE.
+3. Trains with full-dataset analytical backpropagation and BGD, reporting progress.
+4. Prints predictions for the configured dataset.
+5. Builds a `NetGraph` from the trained model without saving or rendering it.
 
-The export loop preserves module order, output-neuron order, and input-weight order.
-It omits biases, dimensions, activation types, and expected outputs.
+`Train` is defined in `src/train.rs` and re-exported as `tars::Train`. Experiment
+factories provide the model, epochs, learning rate, dataset, and identifier. Selection
+is fixed by the factory call in the executable source; there is no interactive
+selector. The NPU export calls are currently commented out.
+
+See [`experiments/README.md`](experiments/README.md) for the configuration contract,
+built-in experiments, reporting behavior, and manual extension workflow.
 
 ## Visualization
 

@@ -10,6 +10,7 @@ architectures.
 |---|---|
 | [`STATUS.md`](STATUS.md) | Current implementation, command status, and known limitations |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Rust modules, public interfaces, execution flow, and NPU structure |
+| [`experiments/README.md`](experiments/README.md) | Experiment modules, Train configuration, selection, and training flow |
 | [`MEM_FORMAT.md`](MEM_FORMAT.md) | Existing `weights.mem` and `activations.mem` behavior |
 | [`DECISIONS.md`](DECISIONS.md) | Architectural decisions reflected in the repository |
 
