@@ -1,5 +1,9 @@
 <h1 align="center">
-  <img src="docs/assets/tars_mascot.png" alt="Tars — geometric robot logo" width="232" height="232" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/tars-logo-transparent.png" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/tars-logo-transparent-dark.png" />
+    <img src="docs/assets/tars-logo-transparent-dark.png" alt="Tars — geometric robot logo" width="360" height="459" />
+  </picture>
 </h1>
 
 <p align="center">
