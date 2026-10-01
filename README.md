@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="docs/assets/tars-mascot.svg" alt="Tars — geometric robot logo" width="232" height="294" />
+  <img src="docs/assets/tars_mascot.png" alt="Tars — geometric robot logo" width="232" height="232" />
 </h1>
 
 <p align="center">
