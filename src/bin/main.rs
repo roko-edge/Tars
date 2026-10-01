@@ -1,11 +1,13 @@
 use std::error::Error;
 use tars::{view::graph::NetGraph, *};
-mod experiments;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut train = experiments::xor::train();
-    let step = (train.epochs / 20).max(1);
 
+    println!("Starting {:?} experiment...", train.experiment_type);
+    println!("Check docs/experiments/ to check experiments API.");
+
+    let step = (train.epochs / 20).max(1);
     let optimizer = BGD::new(train.lr);
     let mut prev_cost = cost(&train.model, &train.dataset);
     println!("epoch: 000000, cost is:{:014.8}", prev_cost);
@@ -27,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for d in &train.dataset {
         println!(
-            "Para as entradas: {:?} o modelo retorna: {:?} esperado:{:?} ",
+            "Recived input: {:?}; The network returns: {:?};  Expected: {:?} ",
             d.input,
             train.model.forward(&d.input),
             d.target
