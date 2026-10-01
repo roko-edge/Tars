@@ -4,16 +4,14 @@ pub use tensor::*;
 pub fn random_vec(len: usize) -> Vec<f32> {
     let mut vector = vec![0.0; len];
     for e in &mut vector {
-        *e = rand::random();
+        *e = rand::random::<f32>() * 2.0 - 1.0;
     }
     vector
 }
 pub fn random_mat(lenx: usize, leny: usize) -> Vec<Vec<f32>> {
     let mut mat = vec![vec![0.0; lenx]; leny];
     for l in &mut mat {
-        for c in l {
-            *c = rand::random();
-        }
+        *l = random_vec(lenx);
     }
     mat
 }

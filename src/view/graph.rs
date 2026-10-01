@@ -23,7 +23,7 @@ impl Perceptron {
 
 impl fmt::Display for Perceptron {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "")
+        write!(f, "{}", self.id)
     }
 }
 
@@ -86,10 +86,19 @@ impl NetGraph {
             &|_, edge| {
                 let weight = *edge.weight();
 
-                let intensity = weight.abs().clamp(0.0, 1.0);
-                let gray = ((1.0 - intensity) * 255.0) as u8;
+                let intensity = weight.clamp(-1.0, 1.0);
+                let bright = (intensity * 255.0) as u8;
+                let light = ((intensity * -255.0) as i8) as u8;
 
-                format!(r##"color="#{0:02x}{0:02x}{0:02x}""##, gray)
+                if weight >= 0.0 {
+                    format!(r##"color="#0000{0:02x}""##, bright)
+                } else {
+                    format!(
+                        r##"color="#{0:02x}0000
+                        ""##,
+                        light
+                    )
+                }
             },
             &|_, _| String::new(),
         );
@@ -107,9 +116,10 @@ impl NetGraph {
             .arg(source_path)
             .arg("-Gbgcolor=#000000")
             .arg("-Grankdir=LR")
-            .arg("-Gsplines=line")
+            .arg("-Gsplines=spline")
             .arg("-Gnodesep=0.8")
-            .arg("-Granksep=1.0 equally")
+            .arg("-Granksep=1.5 equally")
+            .arg("-Epenwidth=1.0")
             .arg("-Nshape=circle")
             .arg("-Nfixedsize=true")
             .arg("-Nwidth=0.6")
