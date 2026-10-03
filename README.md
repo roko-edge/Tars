@@ -84,6 +84,6 @@ See [`docs/README.md`](docs/README.md) for the master navigation map, team roles
 |---|---|
 | [`docs/README.md`](docs/README.md) | **Master Navigation Map & Team Guide** |
 | [`docs/specs/V0_CONTRACT.md`](docs/specs/V0_CONTRACT.md) | **TARS v0.1.0 Release Contract:** MNIST, NPU, Quantization & Paper Scope |
-| [`docs/roadmap/ROADMAP.md`](docs/roadmap/ROADMAP.md) | Team distribution (Arthur, Gustavo, Gildo) and 6-week roadmap |
+| [`docs/roadmap/ROADMAP.md`](docs/roadmap/ROADMAP.md) | Team distribution (Arthur, Gustavo, Gildo) and sequential phase milestones |
 | [`docs/STATUS.md`](docs/STATUS.md) | Current implementation state and known limitations |
 | [`AGENTS.md`](AGENTS.md) | Repository automation policy for AI tools |

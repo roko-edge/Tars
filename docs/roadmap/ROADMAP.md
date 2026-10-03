@@ -68,9 +68,11 @@ for contract sign-off and verification).
 
 ---
 
-## 3. Milestone Execution Plan (6-Week Horizon)
+## 3. Milestone Execution Plan (Sequential Phases)
 
-### Phase 1: Contracts and Deterministic Baselines (Weeks 1–2)
+Phases are strictly ordered by dependency, not by calendar. Each phase is completed when its gate condition is met.
+
+### Phase 1: Contracts and Deterministic Baselines
 
 - **Arthur:**
   - Author normative specifications: `docs/specs/MODEL_TRAIT.md` and `docs/specs/ARITHMETIC_Q8_24.md`.
@@ -89,7 +91,7 @@ for contract sign-off and verification).
 
 ---
 
-### Phase 2: Core Abstractions and Hardware Upgrades (Weeks 3–4)
+### Phase 2: Core Abstractions and Hardware Upgrades
 
 - **Gustavo:**
   - Deliver zero-copy tensor views (`slice`, `transpose`, `reshape`, `permute`) via strided index projection.
@@ -108,7 +110,7 @@ for contract sign-off and verification).
 
 ---
 
-### Phase 3: Engine Convergence and Tensorized Backpropagation (Week 5)
+### Phase 3: Engine Convergence and Tensorized Backpropagation
 
 - **Gildo (Lead) & Arthur (Pair):**
   - Migrate `Linear` layer to store weights and biases as contiguous `Tensor` instances.
@@ -125,7 +127,7 @@ for contract sign-off and verification).
 
 ---
 
-### Phase 4: Integrated System Verification (Week 6)
+### Phase 4: Integrated System Verification
 
 - **Arthur (Lead) & Gustavo (Pair):**
   - Export trained XOR model from Rust runtime into unified `.mem` format with manifest.

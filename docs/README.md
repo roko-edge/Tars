@@ -9,7 +9,7 @@ This directory contains technical specifications, architectural designs, impleme
 | Objective | Document | Scope |
 |---|---|---|
 | **Target Milestone & V0 Scope** | [`specs/V0_CONTRACT.md`](specs/V0_CONTRACT.md) | Release contract: MNIST benchmark, NPU hardware, quantization, and paper requirements |
-| **Team Division & Schedule** | [`roadmap/ROADMAP.md`](roadmap/ROADMAP.md) | Work allocation across Arthur, Gustavo, and Gildo; 6-week milestones and intersections |
+| **Team Division & Milestones** | [`roadmap/ROADMAP.md`](roadmap/ROADMAP.md) | Work allocation across Arthur, Gustavo, and Gildo; sequential phase milestones and intersections |
 | **Software & RTL Architecture** | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Structure of the Rust package (`src/`) and SystemVerilog prototype (`npu/`) |
 | **Implementation Status** | [`STATUS.md`](STATUS.md) | Current status of modules, commands, and known technical limitations |
 | **Research Logs for Publication** | [`research/README.md`](research/README.md) | Empirical research logs and mapping to academic paper sections |
