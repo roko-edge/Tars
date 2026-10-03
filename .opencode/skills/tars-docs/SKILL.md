@@ -40,6 +40,10 @@ operationalizes it for any documentation task.
    - Never touch `.rs`, `.sv`, `Cargo.toml`, `Makefile`, `flake.nix`, `.gitignore`.
    - Always work on a `docs/*` branch for the maintainer to review.
 
+5. **No commit message generation.**
+   - Commit messages must be written directly by the human author of the change to preserve genuine intent and human reflection in git history.
+   - Agents must never generate final commit messages; they may at most review grammar or spelling upon explicit user request.
+
 ## Standard Document Skeleton
 
 ```markdown

@@ -26,7 +26,7 @@ The Rust implementation uses `f32`, `std`, and dynamically allocated vectors. An
 
 ## Visualization
 
-The package exports a `view` module backed by `petgraph`. `NetGraph::from_sequential` extracts graph topology directly from a trained `Sequential` model. The visualization binary saves Graphviz DOT files and generates PNG diagrams. `plotters` and `petgraph` are required package dependencies.
+The package exports a `view` module backed by `petgraph`. `NetGraph::network_to_graph` extracts graph topology directly from a `Sequential` model and input slice. The visualization binary saves Graphviz DOT files (`graph_to_dot` / `save_dot`) and generates PNG diagrams via `plot()`. `plotters` and `petgraph` are required package dependencies.
 
 ---
 
@@ -47,7 +47,7 @@ The package exports a `view` module backed by `petgraph`. `NetGraph::from_sequen
 | Command | Status | Notes |
 |---|---|---|
 | `cargo build` | Available | Compiles the Rust package and binaries |
-| `cargo run --bin main` | Available | Trains configured model and exports Q8.24 memory files to `npu/` |
+| `cargo run --bin main` | Available | Trains XOR model; note that export calls (`export_model`, `export_data`) are currently commented out in `src/bin/main.rs` |
 | `cargo run --bin visualization` | Available | Requires Graphviz; generates graph DOT and PNG artifacts |
 | `cargo test` | Available | Currently reports 0 tests; test suite introduction in progress |
 | `make sim` (from `npu/`) | Partial | Compiles `main.sv` and `tb.sv` using Icarus Verilog and prints output; lacks pass/fail checks |

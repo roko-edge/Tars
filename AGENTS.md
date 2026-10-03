@@ -42,7 +42,14 @@ Ao criar ou modificar arquivos em `docs/`, os agentes devem obrigatoriamente seg
 
 ---
 
-## 4. Propriedade do Código
+## 4. Mensagens de Commit (Autoria Humana do Histórico)
+
+**Commit messages são escritas pelo autor humano da mudança.**
+Agentes de IA não devem gerar mensagens de commit finais para substituição da reflexão do autor; podem, no máximo, revisar ortografia ou gramática a pedido explícito do mantenedor. O histórico de commits é o registro permanente da intenção humana e da tomada de decisão dos membros do projeto.
+
+---
+
+## 5. Propriedade do Código
 
 Todo o código de `tars-ml` é escrito **exclusivamente por humanos**.
 Agentes de IA são ferramentas de consulta, pesquisa e documentação — nunca autores ou editores do código.
