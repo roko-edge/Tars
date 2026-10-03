@@ -7,6 +7,9 @@ pub mod optim;
 pub mod train;
 pub mod view;
 
+#[cfg(test)]
+mod tests;
+
 pub use data::*;
 pub use experiments::*;
 pub use export::*;
