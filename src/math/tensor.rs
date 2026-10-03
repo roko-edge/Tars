@@ -16,8 +16,11 @@ impl Tensor {
         }
         strides
     }
+    pub fn is_contiguous(&self) -> bool {
+        self.strides == Self::contiguous_strides(&self.shape)
+    }
     fn from(storage: Vec<f32>, shape: Vec<usize>, offset: usize) -> Self {
-        let strides = Tensor::contiguous_strides(&shape);
+        let strides = Self::contiguous_strides(&shape);
 
         Self {
             storage: Arc::new(storage),
@@ -36,7 +39,7 @@ impl Tensor {
             numel,
             "Storage received must match with shape calc of elements"
         );
-        Tensor::from(storage, shape, 0)
+        Self::from(storage, shape, 0)
     }
     fn storage_index(&self, indices: &[usize]) -> usize {
         assert_eq!(
