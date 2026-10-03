@@ -20,6 +20,8 @@ module tb;
   logic signed [31:0] data[8];
 
   initial begin
+    $dumpfile("build/dump.vcd");
+    $dumpvars(0, tb);
     clk = 0;
     $readmemh("bias.mem", dut.bias);
     $readmemh("weights.mem", dut.weights);

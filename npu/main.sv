@@ -32,7 +32,7 @@ module npu #(
       done <= 0;
     end else if (start) begin
       done <= 0;
-      if (i == N - 1) begin
+      if (32'(i) == N - 1) begin
         result <= acc + mult + bias[0];
         acc <= 0;
         done <= 1;
