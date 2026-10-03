@@ -1,4 +1,3 @@
-use std::env;
 use std::io::Result;
 use tars::Sequential;
 use tars::view::graph::*;
