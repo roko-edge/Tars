@@ -78,10 +78,12 @@ are currently incomplete; see [`npu/README.md`](npu/README.md).
 
 ## Documentation
 
-| Document | Scope |
+See [`docs/README.md`](docs/README.md) for the master navigation map, team roles, and specifications.
+
+| Key Reference | Scope |
 |---|---|
-| [`docs/STATUS.md`](docs/STATUS.md) | Implemented features and known limitations |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Current Rust and SystemVerilog structure |
-| [`docs/MEM_FORMAT.md`](docs/MEM_FORMAT.md) | Current memory-file behavior |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Implemented architectural decisions |
-| [`AGENTS.md`](AGENTS.md) | Repository policy for automated agents |
+| [`docs/README.md`](docs/README.md) | **Master Navigation Map & Team Guide** |
+| [`docs/specs/V0_CONTRACT.md`](docs/specs/V0_CONTRACT.md) | **TARS v0.1.0 Release Contract:** MNIST, NPU, Quantization & Paper Scope |
+| [`docs/roadmap/ROADMAP.md`](docs/roadmap/ROADMAP.md) | Team distribution (Arthur, Gustavo, Gildo) and 6-week roadmap |
+| [`docs/STATUS.md`](docs/STATUS.md) | Current implementation state and known limitations |
+| [`AGENTS.md`](AGENTS.md) | Repository automation policy for AI tools |

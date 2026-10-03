@@ -1,83 +1,67 @@
 # Implementation Status
 
-The repository is an early experimental implementation. The Rust model and the
-SystemVerilog NPU prototype execute independently and do not currently provide
-numerically equivalent inference.
+This document reflects the current state of the repository as of October 2026.
 
-## Rust package
+---
 
-| Component | Status | Implementation |
+## Rust Package
+
+| Component | Status | Implementation Details |
 |---|---|---|
-| Sequential model | Implemented | `Sequential` stores `Vec<AnyModule>` |
-| Dense layer | Implemented | `Linear` uses `Vec<Vec<f32>>` weights and `Vec<f32>` biases |
-| Activations | Implemented | ReLU and sigmoid |
-| Loss | Implemented | Mean squared error over outputs and samples |
-| Gradient | Implemented | Centered finite differences with `h = 1e-3` |
-| Optimizer | Implemented | Batch gradient descent |
-| Experiments | Implemented | Interactive OR and XOR selection |
-| Weight output | Partial | Writes only IEEE-754 weight bits to `npu/weights.mem` |
-| Automated tests | Not implemented | No Rust `#[test]` functions are present |
+| Sequential Model | Implemented | `Sequential` stores `Vec<AnyModule>`; migration to `Module` trait scheduled in `docs/roadmap/ROADMAP.md` |
+| Dense Layer | Implemented | `Linear` uses `Vec<Vec<f32>>` weights and `Vec<f32>` biases |
+| Activations | Implemented | ReLU and Sigmoid modules |
+| Tensor Core | In Progress | `Tensor` struct in `src/math/tensor.rs` with `Arc` storage, shapes, strides, and `is_contiguous()` check |
+| Loss Function | Implemented | Mean Squared Error (MSE) across outputs and dataset samples |
+| Analytical Backpropagation | Implemented | Full analytical backprop in `src/optim/grad.rs` (`backward()`) |
+| Finite-Difference Gradient | Implemented | Centered finite differences in `src/optim/grad.rs` (`num_grad()`), retained for verification |
+| Optimizer | Implemented | Batch Gradient Descent (BGD) applying computed gradients |
+| Experiments | Implemented | Built-in OR and XOR experiment factories |
+| Fixed-Point Export | Implemented | `export_model()` and `export_data()` convert values to Q8.24 fixed-point hex files (`weights.mem`, `bias.mem`, `activations.mem`, `target.mem`) |
+| Automated Tests | Not Implemented | Unit tests scheduled for introduction alongside deterministic PRNG harness |
 
-The Rust implementation uses `f32`, `std`, and dynamically allocated vectors. It has
-no analytical backpropagation, quantization-aware training, fixed-point arithmetic,
-or `no_std` runtime.
+The Rust implementation uses `f32`, `std`, and dynamically allocated vectors. Analytical backpropagation is present, but operates on nested vectors rather than contiguous tensors.
+
+---
 
 ## Visualization
 
-The package exports a `view` module backed by `petgraph`. The visualization binary
-creates a hard-coded graph, saves DOT text, and invokes Graphviz to generate a PNG.
-It does not inspect or render a `Sequential` model. `plotters` and `petgraph` are
-unconditional package dependencies.
+The package exports a `view` module backed by `petgraph`. `NetGraph::from_sequential` extracts graph topology directly from a trained `Sequential` model. The visualization binary saves Graphviz DOT files and generates PNG diagrams. `plotters` and `petgraph` are required package dependencies.
 
-## SystemVerilog prototype
+---
 
-| Component | Status | Implementation |
+## SystemVerilog NPU Prototype
+
+| Component | Status | Implementation Details |
 |---|---|---|
-| Dot product | Implemented | One signed 32-bit product and accumulation per clock |
-| Vector length | Parameterized | `N`, instantiated as `4` by the testbench |
-| Bias | Implemented | External signed 32-bit input added to the final result |
-| Control | Implemented | `rst`, `start`, and `done` signals |
-| Memory loading | Partial | Testbench loads arrays through hierarchical access |
-| Result validation | Not implemented | Testbench prints without asserting an expected value |
-| Waveform output | Not implemented | Testbench has no `$dumpfile` or `$dumpvars` calls |
+| Dot Product | Implemented | Signed 32-bit product and accumulation operating on Q8.24 fixed-point words (`raw_mult[55:24]`) |
+| Vector Length | Parameterized | Parameter `N` (instantiated as `N=2` in testbench) |
+| Internal Storage | Implemented | Internal `bias[1]`, `weights[N]`, and `act[N]` arrays loaded via `$readmemh` |
+| Control Logic | Implemented | `clk`, `rst`, `start`, and `done` handshaking signals |
+| Testbench | Partial | Instantiates DUT and prints results; lacks self-checking assertions and VCD dump calls |
 
-The module has no numeric-mode parameter, widened accumulator, saturation logic,
-hardware activation function, model controller, or layer engine.
+---
 
-## Rust and NPU compatibility
-
-The Rust executable writes weights with `f32::to_bits()`. The SystemVerilog module
-interprets loaded words as signed integers. Biases and topology are not exported, and
-the testbench does not consume Rust-generated inputs or expected outputs. Bit-exact
-parity is therefore not defined or tested.
-
-The checked-in NPU configuration also expects four weights, while the checked-in
-`weights.mem` contains two words.
-
-## Command status
+## Command Status
 
 | Command | Status | Notes |
 |---|---|---|
-| `cargo build` | Available | Builds the Rust package and binaries |
-| `cargo run --bin main` | Available | Prompts for OR or XOR and overwrites `npu/weights.mem` |
-| `cargo run --bin visualization` | Available | Requires Graphviz and writes fixed artifact paths |
-| `cargo test` | Available | No automated tests are defined |
-| `make sim` | Partial | Runs the testbench without pass/fail validation; current weights are incomplete |
-| `make sim2` | Broken | References absent `main2.sv` and `tb2.sv` |
-| `make test` / `make all` | Broken | Depend on `sim2` |
-| `make wave` | Broken | Expects a VCD file that the testbench does not generate |
-| `make wave2` | Broken | Depends on absent ternary sources and waveform output |
-| `make lint` | Broken | Its second invocation references absent ternary sources |
-| `make clean` | Available | Removes NPU build artifacts |
+| `cargo build` | Available | Compiles the Rust package and binaries |
+| `cargo run --bin main` | Available | Trains configured model and exports Q8.24 memory files to `npu/` |
+| `cargo run --bin visualization` | Available | Requires Graphviz; generates graph DOT and PNG artifacts |
+| `cargo test` | Available | Currently reports 0 tests; test suite introduction in progress |
+| `make sim` (from `npu/`) | Partial | Compiles `main.sv` and `tb.sv` using Icarus Verilog and prints output; lacks pass/fail checks |
+| `make sim2` | Broken | References absent `main2.sv` and `tb2.sv` files |
+| `make test` / `make all` | Broken | Depends on `sim2` |
+| `make wave` / `make wave2` | Broken | References absent VCD dump files |
+| `make lint` | Broken | Invocations reference absent ternary sources |
+| `make clean` | Available | Cleans NPU build outputs |
 
-## Known technical limitations
+---
 
-- Model dimensions are not validated against input, target, weight, or bias lengths.
-- `AnyModule::as_linear` and `as_mut_linear` panic when called for an activation.
-- Training cost scales poorly because each parameter requires two complete cost
-  evaluations per gradient step.
-- Weight initialization uses unscaled uniform random values.
-- The visualization uses fixed paths and reports Graphviz process failures only at
-  runtime.
-- The NPU uses internal arrays loaded directly by the testbench rather than an
-  external memory interface.
+## Known Technical Limitations
+
+1. **Testbench Self-Checking:** The NPU testbench (`tb.sv`) prints result signals but does not assert equality against expected values or return a non-zero exit code on failure.
+2. **Q8.24 Rounding Strategy:** Rust export (`src/export.rs`) and SystemVerilog arithmetic (`npu/main.sv`) perform truncation (`as i32` / bit slicing) rather than round-half-to-even.
+3. **NPU Accumulator Width:** The NPU accumulator is 32 bits without saturation logic, susceptible to overflow on large vector sizes.
+4. **Vector Tensor Storage:** Linear layers and gradients currently allocate nested vectors (`Vec<Vec<f32>>`), requiring migration to contiguous `Tensor` storage.

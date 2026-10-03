@@ -1,34 +1,51 @@
 # AGENTS.md — Política de Agentes e IA neste Repositório
 
-## Regra inviolável
+## 1. Regra Inviolável (Propriedade Humana do Código)
 
 **Qualquer e todo agente (ou modelo de IA) neste repositório NÃO PODE encostar no código.**
 
 Isso significa que nenhum agente pode:
 
-- Criar, editar, renomear ou deletar **qualquer arquivo de código-fonte**
-  (`.cpp`, `.h`, `.hpp`, `.c`, `.cc`), incluindo `main.cpp`;
-- Modificar arquivos de build ou configuração do projeto
-  (`CMakeLists.txt`, `run.sh`, `shell.nix`, `.clang-format`, `.gitignore`);
-- Aplicar refatorações, "correções", formatação automática ou
-  reescritas de código, **mesmo que detecte bugs, warnings ou más práticas**;
+- Criar, editar, renomear ou deletar **qualquer arquivo de código-fonte** (`.rs`, `.sv`, `.c`, `.cpp`, `.h`), incluindo `main.rs` ou `main.sv`;
+- Modificar arquivos de build ou configuração do projeto (`Cargo.toml`, `Makefile`, `flake.nix`, `.gitignore`);
+- Aplicar refatorações, "correções", formatação automática ou reescritas de código, **mesmo que detecte bugs, warnings ou más práticas**;
 - Gerar patches, commits ou pull requests que alterem código.
 
-## O que um agente PODE fazer
+---
+
+## 2. O que um Agente PODE Fazer
 
 - **Ler** todo o repositório livremente (código, build, histórico, issues);
-- **Escrever e editar apenas documentação** (`.md`, `.txt` em `docs/`) —
-  e somente quando o mantenedor pedir explicitamente;
-- Trabalhar **sempre em uma branch separada** (ex.: `docs/*`), para que o
-  mantenedor revise e aprove antes de qualquer merge;
-- Reportar problemas encontrados no código **por escrito**
-  (issue, relatório, comentário em revisão), sem corrigi-los por conta própria.
+- **Escrever e editar apenas documentação** (`.md`, `.txt` em `docs/`) — e somente quando o mantenedor pedir explicitamente;
+- Trabalhar **sempre em uma branch separada** (ex.: `docs/*`), para que o mantenedor revise e aprove antes de qualquer merge;
+- Reportar problemas encontrados no código **por escrito** (issue, relatório, comentário em revisão), sem corrigi-los por conta própria.
 
-## Propriedade do código
+---
+
+## 3. Diretrizes Estritas de Estilo da Documentação
+
+Ao criar ou modificar arquivos em `docs/`, os agentes devem obrigatoriamente seguir estas regras:
+
+1. **Proibido Código de Implementação (Zero Copy-Paste Code):**
+   - Nunca incluir corpos completos de funções/métodos (`impl`, laços `for`, algoritmos prontos) dentro dos arquivos Markdown.
+   - Incluir apenas assinaturas abstratas de traits, definições estruturais de tipos, equações matemáticas e diagramas conceituais.
+   - O papel da documentação é especificar **o que** deve ser feito, **por que** e **quais os contratos**, deixando a escrita do código exclusivamente para os humanos.
+
+2. **Linguagem Técnica Sobria (Sem Emojis ou Fluff):**
+   - Manter o tom formal, direto e acadêmico/de engenharia em inglês ou português.
+   - **Proibido usar emojis**, saudações informais, elogios ou frases conversacionais de modelos de linguagem.
+   - Manter tabelas claras de navegação e formatação matemática padrão em LaTeX ($\mathcal{L}$, $W_{ij}$).
+
+3. **Hierarquia Concisa e Pontos de Entrada:**
+   - Cada diretório de documentação deve ter um arquivo `README.md` atuando como ponto de entrada com navegação por tarefa e por integrante do time.
+   - Evitar proliferação de arquivos fragmentados; agrupar especificações relacionadas em documentos normativos diretos.
+
+---
+
+## 4. Propriedade do Código
 
 Todo o código de `tars-ml` é escrito **exclusivamente por humanos**.
-Agentes de IA são ferramentas de consulta, pesquisa e documentação —
-nunca autores ou editores do código.
+Agentes de IA são ferramentas de consulta, pesquisa e documentação — nunca autores ou editores do código.
 
 Se um agente precisa apontar um problema, o fluxo é:
 
@@ -38,7 +55,4 @@ Se um agente precisa apontar um problema, o fluxo é:
 
 ---
 
-*Esta política é deliberada: `tars-ml` é uma biblioteca de machine learning
-construída do zero com propósito educacional/de pesquisa. O valor do projeto
-está no aprendizado humano profundo — o código deve refletir decisão humana
-em cada linha.*
+*Esta política é deliberada: `tars-ml` é uma biblioteca de machine learning construída do zero com propósito educacional/de pesquisa. O valor do projeto está no aprendizado humano profundo — o código deve refletir decisão humana em cada linha.*
