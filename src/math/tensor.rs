@@ -1,4 +1,5 @@
 use std::sync::Arc;
+
 #[derive(Debug, Clone)]
 pub struct Tensor {
     storage: Arc<Vec<f32>>,
@@ -6,6 +7,7 @@ pub struct Tensor {
     strides: Vec<usize>,
     offset: usize,
 }
+
 impl Tensor {
     fn contiguous_strides(shape: &[usize]) -> Vec<usize> {
         let mut strides = vec![0; shape.len()];
@@ -16,9 +18,11 @@ impl Tensor {
         }
         strides
     }
+
     pub fn is_contiguous(&self) -> bool {
         self.strides == Self::contiguous_strides(&self.shape)
     }
+
     fn from(storage: Vec<f32>, shape: Vec<usize>, offset: usize) -> Self {
         let strides = Self::contiguous_strides(&shape);
 
@@ -29,9 +33,7 @@ impl Tensor {
             offset,
         }
     }
-    pub fn numel(&self) -> usize {
-        self.shape.iter().product()
-    }
+
     pub fn new(storage: Vec<f32>, shape: Vec<usize>) -> Self {
         let numel = shape.iter().product();
         assert_eq!(
@@ -41,6 +43,7 @@ impl Tensor {
         );
         Self::from(storage, shape, 0)
     }
+
     fn storage_index(&self, indices: &[usize]) -> usize {
         assert_eq!(
             indices.len(),
@@ -54,14 +57,32 @@ impl Tensor {
         }
         idx
     }
+
     pub fn get(&self, index: &[usize]) -> f32 {
         let idx = self.storage_index(index);
         self.storage[idx]
     }
+
     pub fn set(&mut self, index: &[usize], value: f32) {
         let idx = self.storage_index(index);
         let storage =
             Arc::get_mut(&mut self.storage).expect("cannot mutate tensor with shared storage");
         storage[idx] = value;
+    }
+
+    pub fn numel(&self) -> usize {
+        self.shape.iter().product()
+    }
+
+    pub fn transpose(mut &self) {
+        todo!("Transpose ope ins't implemmented yet!")
+    }
+
+    pub fn assign_transpose() -> Self {
+        todo!("Assigned transpose isn't implemmented yet!")
+    }
+
+    pub fn dot_product(x: f32) {
+        todo!("Dot product isn't implemmented yet!")
     }
 }
