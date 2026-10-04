@@ -19,7 +19,7 @@ module npu #(
 
   logic signed [63:0] raw_mult;
   logic signed [31:0] mult;
-  logic signed [31:0] acc;
+  logic signed [63:0] acc;
 
   assign raw_mult = 64'(act[i]) * 64'(weights[i]);
   assign mult = raw_mult[55:24];
@@ -33,11 +33,13 @@ module npu #(
     end else if (start) begin
       done <= 0;
       if (32'(i) == N - 1) begin
-        result <= acc + mult + bias[0];
+        assign signed [63:0] total;
+
+        total <= acc + 64'(mult) + 64'(bias[0]);
         acc <= 0;
         done <= 1;
       end else begin
-        acc <= acc + mult;
+        acc <= acc + 64'(mult);
         i   <= i + 1;
       end
     end

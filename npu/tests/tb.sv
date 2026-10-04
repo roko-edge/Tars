@@ -23,9 +23,9 @@ module tb;
     $dumpfile("build/dump.vcd");
     $dumpvars(0, tb);
     clk = 0;
-    $readmemh("bias.mem", dut.bias);
-    $readmemh("weights.mem", dut.weights);
-    $readmemh("activations.mem", data);
+    $readmemh("data/bias.mem", dut.bias);
+    $readmemh("data/weights.mem", dut.weights);
+    $readmemh("data/activations.mem", data);
     for (int i = 0; i < 8; i += 2) begin
       rst   = 1;
       start = 0;
