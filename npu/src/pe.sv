@@ -3,9 +3,8 @@ module pe (
     input logic rst,
     input logic init,
     input logic en,
-
-    input  logic signed [31:0] w,
-    input  logic signed [31:0] a,
+    input logic signed [31:0] w,
+    input logic signed [31:0] a,
     output logic signed [63:0] accumulator
 );
   logic signed [63:0] raw_mult;
