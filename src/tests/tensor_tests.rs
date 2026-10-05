@@ -7,7 +7,7 @@ use std::sync::Arc;
 pub fn numel_test() {
     let storage: Vec<f32> = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
     let shape: Vec<usize> = vec![2, 3];
-    let tensor: Tensor = Tensor::new(storage, shape, 0);
+    let tensor: Tensor = Tensor::new(storage, shape);
 
     assert_eq!(tensor.numel(), 6);
 }
@@ -16,7 +16,7 @@ pub fn numel_test() {
 fn transpose_test() {
     let storage: Vec<f32> = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
     let shape: Vec<usize> = vec![2, 3];
-    let mut tensor = Tensor::new(storage.clone(), shape, 0);
+    let mut tensor = Tensor::new(storage.clone(), shape);
 
     tensor.transpose();
 

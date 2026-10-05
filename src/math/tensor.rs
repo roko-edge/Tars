@@ -44,6 +44,23 @@ impl Tensor {
         Self::from(storage, shape, 0)
     }
 
+    pub fn zeros(shape: Vec<usize>) -> Self {
+        let numel = shape.iter().product();
+
+        let storage = vec![0.0; numel];
+
+        Self::from(storage, shape, 0)
+    }
+
+    pub fn random_uniform(&mut self, low: f32, high: f32) {
+        let storage =
+            Arc::get_mut(&mut self.storage).expect("***N sei o que faz, boto o erro dps***");
+
+        for i in 0..storage.len() {
+            storage[i] = low + (high - low) * rand::random::<f32>();
+        }
+    }
+
     fn storage_index(&self, indices: &[usize]) -> usize {
         assert_eq!(
             indices.len(),
@@ -63,6 +80,22 @@ impl Tensor {
         self.storage[idx]
     }
 
+    pub fn storage(&self) -> Arc<Vec<f32>> {
+        self.storage.clone()
+    }
+
+    pub fn shape(&self) -> &[usize] {
+        &self.shape
+    }
+
+    pub fn strides(&self) -> &[usize] {
+        &self.strides
+    }
+
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
     pub fn set(&mut self, index: &[usize], value: f32) {
         let idx = self.storage_index(index);
         let storage =
@@ -74,15 +107,81 @@ impl Tensor {
         self.shape.iter().product()
     }
 
-    pub fn transpose(&mut self) {
-        todo!("Transpose ope ins't implemmented yet!")
+    pub fn transpose_mut(&mut self, dim0: usize, dim1: usize) {
+        assert!(
+            dim0 < self.shape.len() && dim1 < self.shape.len(),
+            "dimension/s out of bounds"
+        );
+
+        self.shape.swap(dim0, dim1);
+        self.strides.swap(dim0, dim1);
     }
 
-    pub fn assign_transpose() -> Self {
-        todo!("Assigned transpose isn't implemmented yet!")
+    pub fn transpose(&self, dim0: usize, dim1: usize) -> Self {
+        assert!(
+            dim0 < self.shape.len() && dim1 < self.shape.len(),
+            "dimension/s out of bouns"
+        );
+
+        let mut new_shape = self.shape.clone();
+        let mut new_strides = self.strides.clone();
+
+        new_shape.swap(dim0, dim1);
+        new_strides.swap(dim0, dim1);
+
+        Self {
+            storage: self.storage.clone(),
+            shape: new_shape,
+            strides: new_strides,
+            offset: self.offset,
+        }
     }
 
-    pub fn dot_product(x: f32) {
-        todo!("Dot product isn't implemmented yet!")
+    pub fn dot_product(&self, other: &Tensor) -> f32 {
+        assert_eq!(
+            self.storage.len(),
+            other.storage.len(),
+            "length of storage is different"
+        );
+
+        let mut sum = 0.0;
+
+        for i in 0..self.storage.len() {
+            sum += self.storage[i] * other.storage[i];
+        }
+
+        sum
+    }
+
+    pub fn add(&self, tensor: &Tensor) -> Self {
+        todo!("Finalizar adição");
+    }
+
+    pub fn add_mut(&self, tensor: &Tensor) {
+        todo!("Finalizar adição mutável");
+    }
+
+    pub fn sub(&self, tensor: &Tensor) -> Self {
+        todo!("Finalizar subtração");
+    }
+
+    pub fn sub_mut(&self, tensor: &Tensor) {
+        todo!("Finalizar subtração mutável");
+    }
+
+    pub fn mut_scalar(&self, s: f32) -> Self {
+        todo!("Finalizar multiplicação por escalar");
+    }
+
+    pub fn mut_scalar_mut(&self, s: f32) {
+        todo!("Finalizar multiplicação por escalar mutável");
+    }
+
+    pub fn div_scalar(&self, s: f32) -> Self {
+        todo!("Finalizar divisão por escalar");
+    }
+
+    pub fn div_scalar_mut(&self, s: f32) {
+        todo!("Finalizar divisão por escalar mutável");
     }
 }
