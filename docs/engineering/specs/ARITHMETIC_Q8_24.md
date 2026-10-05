@@ -1,11 +1,14 @@
 # Specification: Q8.24 Fixed-Point Arithmetic and Bit-Exact Parity
 
+**Status:** Target contract with current deviations identified in Sections 2.2 and
+3.3. It does not claim that automated parity verification is implemented.
+
 This document specifies the shared numeric contract between the Rust training runtime
 and the SystemVerilog NPU. Compliance is mandatory for bit-exact hardware parity.
 
 > **V0 Scope:** The full v0.1.0 release requirements, including MNIST benchmark targets,
 > ternary quantization, and research logging protocol, are defined in
-> [`docs/specs/V0_CONTRACT.md`](V0_CONTRACT.md).
+> [`docs/project/V0_CONTRACT.md`](../../project/V0_CONTRACT.md).
 
 ---
 
@@ -38,13 +41,8 @@ where:
 
 ### 2.2 Current Deviation (Normative Warning)
 
-The existing `to_q8_24` implementation performs **truncation**:
-
-```rust
-pub fn to_q8_24(x: f32) -> u32 {
-    ((x * 16_777_216.0) as i32) as u32
-}
-```
+The existing `to_q8_24(x: f32) -> u32` implementation scales by $2^{24}$ and
+performs **truncation** through the Rust numeric cast.
 
 The `as` cast truncates toward zero. Until both the exporter and the NPU arithmetic
 specification agree on rounding mode, **truncation remains the normative behavior**
@@ -87,9 +85,9 @@ $$\text{acc}_{32} = \begin{cases}
 
 ### 3.3 Current Deviation (Normative Warning)
 
-The current RTL maintains the accumulator in 32 bits without saturation. This deviation is
-a known limitation of the prototype and is scheduled for correction in Phase 2 of the
-ROADMAP (see `docs/roadmap/ROADMAP.md`).
+The current processing element maintains a 64-bit accumulator. The top-level result
+is reduced to 32 bits without explicit signed saturation. Saturating reduction remains
+a target recorded in [`docs/project/ROADMAP.md`](../../project/ROADMAP.md).
 
 ---
 
@@ -109,10 +107,11 @@ Rust Runtime                              NPU Simulation
    ├── activations.mem                   ├── $readmemh(activations)
    ├── weights.mem                       ├── $readmemh(weights)
    ├── bias.mem                          ├── $readmemh(bias)
-   └── expected.mem  ─────────────────►  ├── compute (dot product + bias)
+   └── target.mem    ─────────────────►  ├── compute (dot product + bias)
                                           └── assert result == expected
                                           (PASS/FAIL + $fatal on mismatch)
 ```
 
-The testbench must terminate with a non-zero exit status on any mismatch to support
-automated CI integration (Make target: `make test`).
+This protocol is not implemented by the current testbench. The target behavior is to
+terminate with a non-zero exit status on any mismatch; the current `make test` target
+is only an alias for simulation.

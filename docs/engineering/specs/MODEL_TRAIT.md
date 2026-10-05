@@ -1,5 +1,8 @@
 # Specification: Model and Module Interface Hierarchy
 
+**Status:** Target architecture. The current runtime still uses `Sequential` with
+`Vec<AnyModule>` and does not provide the `Model<M>` container specified here.
+
 This document specifies the structural interface contract for neural network
 layers, composite blocks, and execution containers in TARS.
 

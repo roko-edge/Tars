@@ -1,8 +1,13 @@
 # Architecture
 
+**Audience:** TARS maintainers and engineering reviewers.
+
+**Document type:** Current implementation record. Planned replacements belong in
+specifications or proposals and are identified explicitly.
+
 The repository contains one Rust package and one SystemVerilog prototype. They share
-the repository but do not yet share a compatible numeric representation or model
-format.
+the Q8.24 numeric representation, but they do not yet share an operational artifact
+path or a model topology format.
 
 ## Repository structure
 
@@ -11,14 +16,15 @@ Cargo.toml
 src/
   lib.rs                  Public module exports and re-exports
   train.rs                Shared Train configuration
+  experiments.rs          Public experiment-module declarations
   experiments/
-    mod.rs                Public experiment modules
     experiment_type.rs    OR/XOR identifiers
     or.rs                 OR configuration factory
     xor.rs                XOR configuration factory
     local.rs.template     Incomplete local-experiment starting point
   data.rs                 Training samples
   math.rs                 Scalar activations and random initialization
+  math/tensor.rs          Experimental tensor storage
   modules.rs              Module trait and concrete-module enum
   modules/
     linear.rs             Dense layer
@@ -30,16 +36,16 @@ src/
     grad.rs               Finite-difference gradients
     bgd.rs                Batch gradient descent
   view.rs                 Visualization module export
-  view/plot.rs            petgraph and Graphviz integration
+  view/graph.rs           petgraph and Graphviz integration
   bin/
     main.rs               Training executable with source-selected experiment
     visualization.rs      Hard-coded graph visualization executable
 npu/
-  main.sv                 Parameterized dot-product module
-  tb.sv                   Simulation testbench
+  src/npu.sv              Parameterized dot-product controller
+  src/pe.sv               Multiply-accumulate processing element
+  tests/tb.sv             Simulation testbench
+  data/                    Memory files consumed by the testbench
   Makefile                Simulation, waveform, and lint targets
-  activations.mem         Testbench activation values
-  weights.mem             Weight values
 ```
 
 ## Rust model
@@ -112,18 +118,19 @@ bias. `BGD::step` applies the resulting gradient to each linear layer.
 
 `src/bin/main.rs` performs the following operations:
 
-1. Calls `experiments::xor::train()` to construct the selected `Train` configuration.
+1. Calls `experiments::or::train()` to construct the selected `Train` configuration.
 2. Prints its `ExperimentType` identifier and initial MSE.
 3. Trains with full-dataset analytical backpropagation and BGD, reporting progress.
 4. Prints predictions for the configured dataset.
-5. Builds a `NetGraph` from the trained model without saving or rendering it.
+5. Exports Q8.24 model and dataset artifacts under `npu/`.
+6. Builds a `NetGraph` from the trained model without saving or rendering it.
 
 `Train` is defined in `src/train.rs` and re-exported as `tars::Train`. Experiment
 factories provide the model, epochs, learning rate, dataset, and identifier. Selection
 is fixed by the factory call in the executable source; there is no interactive
-selector. The NPU export calls are currently commented out.
+selector. Model and dataset export calls run after training.
 
-See [`experiments/README.md`](experiments/README.md) for the configuration contract,
+See [`../EXPERIMENTS.md`](../EXPERIMENTS.md) for the configuration contract,
 built-in experiments, reporting behavior, and manual extension workflow.
 
 ## Visualization
@@ -144,8 +151,9 @@ impl NetGraph {
 ```
 
 Node indices are retained in insertion order. `plot` invokes the external `dot`
-command with fixed input and output paths. The visualization executable constructs a
-graph directly and is not connected to `Sequential`.
+command with fixed input and output paths. The visualization executable constructs
+its own hard-coded `Sequential` model and is not connected to the model trained by
+the main executable.
 
 ## SystemVerilog Hardware Subsystem
 
@@ -173,9 +181,12 @@ The Rust export module (`src/export.rs`) converts floating-point weights, biases
 
 | Artifact File | Format | Source Generator | Consumer |
 |---|---|---|---|
-| `weights.mem` | Q8.24 Hex | `export_model()` | `npu/src/npu.sv` (`w` array) |
-| `bias.mem` | Q8.24 Hex | `export_model()` | `npu/src/npu.sv` (`b` array) |
-| `activations.mem` | Q8.24 Hex | `export_data()` | `npu/tests/tb.sv` (`a` array) |
-| `target.mem` | Q8.24 Hex | `export_data()` | Testbench verification |
+| `npu/weights.mem` | Q8.24 Hex | `export_model()` | Not consumed directly by the current testbench |
+| `npu/bias.mem` | Q8.24 Hex | `export_model()` | Not consumed directly by the current testbench |
+| `npu/activations.mem` | Q8.24 Hex | `export_data()` | Not consumed directly by the current testbench |
+| `npu/target.mem` | Q8.24 Hex | `export_data()` | Not consumed by the current testbench |
 
-The integration boundary shares the Q8.24 numeric representation with truncation semantics across Rust and SystemVerilog. Full end-to-end topology compilation and bit-exact golden vector assertions are governed by Phase 3 and Phase 4 roadmap milestones.
+The testbench instead reads checked-in files under `npu/data/`. The numeric encoding
+is shared, but copying or otherwise connecting the exported artifacts remains manual.
+Full end-to-end topology compilation and bit-exact golden vector assertions are
+project targets recorded in [`../project/ROADMAP.md`](../project/ROADMAP.md).

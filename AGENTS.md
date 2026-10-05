@@ -17,7 +17,7 @@ Isso significa que nenhum agente pode:
 ## 2. O que um Agente PODE Fazer
 
 - **Ler** todo o repositório livremente (código, build, histórico, issues);
-- **Escrever e editar apenas documentação** (`.md`, `.txt` em `docs/`) — e somente quando o mantenedor pedir explicitamente;
+- **Escrever e editar apenas documentação** (`.md`, `.txt` em `docs/ e seus subdiretorios`) — e somente quando o mantenedor pedir explicitamente;
 - Trabalhar **sempre em uma branch separada** (ex.: `docs/*`), para que o mantenedor revise e aprove antes de qualquer merge;
 - Reportar problemas encontrados no código **por escrito** (issue, relatório, comentário em revisão), sem corrigi-los por conta própria.
 

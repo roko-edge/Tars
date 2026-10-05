@@ -1,6 +1,9 @@
-# Observability and Frontend Interface
+# Proposal: Observability and Frontend Interface
 
-This document specifies the telemetry architecture, interchange formats, and
+**Status:** Proposed. The telemetry interfaces, persisted run layout, frontend, and
+streaming server described here are not current library features.
+
+This document proposes the telemetry architecture, interchange formats, and
 implementation phases for training observability and interactive visualization in
 TARS.
 

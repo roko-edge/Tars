@@ -1,5 +1,9 @@
 # Specification: Tensor Storage, Strides, and Memory Layout
 
+**Status:** Target contract for an incomplete subsystem. The current `Tensor`
+implementation provides only basic construction, indexing, mutation, element count,
+and contiguity inspection.
+
 This document defines the normative memory layout, striding rules, view transformations,
 and broadcasting semantics for `Tensor` in `src/math/tensor.rs`.
 

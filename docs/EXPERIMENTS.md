@@ -1,5 +1,7 @@
 # Experiments
 
+**Audience:** Users running the implemented OR and XOR configurations.
+
 This page describes the experiment API and training flow currently implemented in
 TARS. Experiment definitions configure a run; the executable owns the training loop.
 
@@ -7,12 +9,12 @@ TARS. Experiment definitions configure a run; the executable owns the training l
 
 | Source | Responsibility |
 |---|---|
-| [`src/train.rs`](../../src/train.rs) | Shared `Train` configuration |
-| [`src/experiments/mod.rs`](../../src/experiments/mod.rs) | Public experiment modules |
-| [`src/experiments/experiment_type.rs`](../../src/experiments/experiment_type.rs) | `ExperimentType` identifiers |
-| [`src/experiments/or.rs`](../../src/experiments/or.rs) | OR configuration factory |
-| [`src/experiments/xor.rs`](../../src/experiments/xor.rs) | XOR configuration factory |
-| [`src/bin/main.rs`](../../src/bin/main.rs) | Selection, training, predictions, and graph construction |
+| [`src/train.rs`](../src/train.rs) | Shared `Train` configuration |
+| [`src/experiments.rs`](../src/experiments.rs) | Public experiment modules |
+| [`src/experiments/experiment_type.rs`](../src/experiments/experiment_type.rs) | `ExperimentType` identifiers |
+| [`src/experiments/or.rs`](../src/experiments/or.rs) | OR configuration factory |
+| [`src/experiments/xor.rs`](../src/experiments/xor.rs) | XOR configuration factory |
+| [`src/bin/main.rs`](../src/bin/main.rs) | Selection, training, predictions, export, and graph construction |
 
 `Train` was moved out of `lib.rs` into `train.rs`. The library declares `pub mod
 train` and re-exports its contents, so callers can use either `tars::Train` or
@@ -58,14 +60,11 @@ Both datasets contain the complete two-input truth table in the following order:
 
 ## Selection and execution
 
-The executable currently selects XOR through this call in `src/bin/main.rs`:
+The executable currently selects the OR factory in `src/bin/main.rs`.
 
-```rust
-let mut train = experiments::xor::train();
-```
-
-Selection is fixed in the source compiled into the executable. To select OR, a
-human maintainer changes that call to `experiments::or::train()` and rebuilds. There
+Selection is fixed in the source compiled into the executable. To select XOR, a
+human maintainer changes the selected factory to `experiments::xor::train()` and
+rebuilds. There
 is no stdin prompt, command-line selector, or Cargo feature selecting an experiment.
 The factory itself constructs the configuration at runtime.
 
@@ -117,10 +116,10 @@ Training runs for the configured epoch count without early stopping.
 
 ## Exports and constraints
 
-Calls to `export_model` and `export_data` are commented out in `main`. A normal run
-therefore does not write or overwrite NPU `.mem` files. Those separate export
-helpers currently encode values through `to_q8_24`; they are not part of the active
-experiment flow.
+Calls to `export_model` and `export_data` are active in `main`. A normal run from the
+repository root overwrites `npu/weights.mem`, `npu/bias.mem`,
+`npu/activations.mem`, and `npu/target.mem`. These files are not consumed directly
+by the current testbench, which reads checked-in artifacts from `npu/data/`.
 
 Configurations must provide a nonempty dataset because graph extraction accesses
 `train.dataset[0]`. Inputs, targets, and layer dimensions must be consistent; the
@@ -134,15 +133,16 @@ A human maintainer can extend the same pattern:
 1. Define a module under `src/experiments/` with a `pub fn train() -> Train` factory.
 2. Supply all five configuration fields, including a matching experiment identifier.
 3. Add the identifier to `ExperimentType` and expose the module in
-   `src/experiments/mod.rs`.
+   `src/experiments.rs`.
 4. Select the factory in `src/bin/main.rs`, rebuild, and run the executable.
 5. Document the topology, dataset, and hyperparameters alongside this page.
 
-[`local.rs.template`](../../src/experiments/local.rs.template) is an incomplete
+[`local.rs.template`](../src/experiments/local.rs.template) is an incomplete
 starting point: it omits the required `experiment_type` field and uses `use tars::*`
 rather than the `crate` imports used by the built-in library modules. It is not
-declared in `src/experiments/mod.rs`, loaded automatically, or a ready-to-compile
+declared in `src/experiments.rs`, loaded automatically, or a ready-to-compile
 experiment. Its imports and fields need to be adapted to the intended module location
 by the maintainer.
 
-For the broader module structure, see [`ARCHITECTURE.md`](../ARCHITECTURE.md).
+For the broader module structure, see
+[`engineering/ARCHITECTURE.md`](engineering/ARCHITECTURE.md).

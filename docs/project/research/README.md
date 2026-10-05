@@ -1,6 +1,10 @@
 # Research Logs and Academic Publication Notes
 
-This directory contains empirical research logs, mathematical derivations, hardware/software co-design trade-offs, and experimental benchmarks for TARS.
+**Document type:** Project research process and publication planning.
+
+This directory is reserved for empirical research logs, mathematical derivations,
+hardware/software co-design trade-offs, and experimental benchmarks for TARS. No
+numbered research log is currently present.
 
 The contents of this directory serve as the primary source material for compiling academic publications on TARS (e.g., hardware-efficient NPU acceleration, ternary quantization loss bounds, and bit-exact co-simulation).
 
@@ -8,15 +12,15 @@ The contents of this directory serve as the primary source material for compilin
 
 ## Log Index
 
-| ID | Title | Domain | Key Finding / Artifact |
+| ID | Planned title | Domain | State |
 |---|---|---|---|
-| `LOG-000` | Research Logging Protocol & Paper Outline | Methodology | Template and target paper section mapping |
+| `LOG-000` | Research Logging Protocol and Paper Outline | Methodology | Planned |
 
 ---
 
 ## Paper Structural Mapping
 
-Logs in this directory map directly to the planned academic paper sections:
+Planned logs map to the proposed academic paper sections:
 
 ```text
 Paper Section                      Corresponding Research Logs
