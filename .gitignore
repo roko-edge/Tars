@@ -2,7 +2,7 @@ build/
 .cache/
 .direnv/
 .omo/
-./npu/*.mem
+./npu/data/*.mem
 
 src/view/artifacts/*
 
