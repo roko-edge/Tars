@@ -9,7 +9,8 @@ Isso significa que nenhum agente pode:
 - Criar, editar, renomear ou deletar **qualquer arquivo de código-fonte** (`.rs`, `.sv`, `.c`, `.cpp`, `.h`), incluindo `main.rs` ou `main.sv`;
 - Modificar arquivos de build ou configuração do projeto (`Cargo.toml`, `Makefile`, `flake.nix`, `.gitignore`);
 - Aplicar refatorações, "correções", formatação automática ou reescritas de código, **mesmo que detecte bugs, warnings ou más práticas**;
-- Gerar patches, commits ou pull requests que alterem código.
+- Gerar patches, commits ou pull requests que alterem código;
+- Alterar o AGENTS.md.
 
 ---
 
