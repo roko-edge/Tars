@@ -61,6 +61,21 @@ Se um agente precisa apontar um problema, o fluxo é:
 2. Aguardar o humano corrigir manualmente;
 3. Nunca "adiantar" a correção.
 
+## 6. padrão de documentação
+
+1. O diretório docs/ está dividido em três pontos de acesso:
+
+    docs/
+        Documentação direcionada ao usuário — ensina a usar os recursos implementados na biblioteca.
+
+    docs/engineering/
+        Registro de arquitetura, contratos e propostas técnicas internas.
+
+    docs/project/
+        Registra planejamento, status, pesquisa e comunicação.
+
+    A regra é que agentes, ao escreverem documentação, devem seguir essa divisão à risca.
+
 ---
 
 *Esta política é deliberada: `tars-ml` é uma biblioteca de machine learning construída do zero com propósito educacional/de pesquisa. O valor do projeto está no aprendizado humano profundo — o código deve refletir decisão humana em cada linha.*
