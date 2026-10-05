@@ -147,41 +147,35 @@ Node indices are retained in insertion order. `plot` invokes the external `dot`
 command with fixed input and output paths. The visualization executable constructs a
 graph directly and is not connected to `Sequential`.
 
-## SystemVerilog module
+## SystemVerilog Hardware Subsystem
 
-`npu/main.sv` defines `npu`, parameterized by vector length `N`:
+`npu/src/npu.sv` defines the top-level `npu` module, parameterized by vector length `N`:
 
 ```systemverilog
 module npu #(
-    parameter int N
+    parameter int N = 2
 ) (
     input  logic               clk,
     input  logic               rst,
     input  logic               start,
-    input  logic signed [31:0] bias,
     output logic               done,
     output logic signed [31:0] result
 );
 ```
 
-The module contains internal `weights[N]` and `act[N]` arrays. While `start` is
-asserted, it processes one array element per clock and adds `bias` when processing the
-last element. Multiplication and accumulation use signed 32-bit signals; there is no
-fixed-point scaling, widened accumulator, saturation, or activation function.
+The top-level NPU module uses a state machine (`IDLE`, `BUSY`) and delegates multiply-accumulate operations to the Processing Element (`pe.sv` in `npu/src/`), which maintains a 64-bit signed accumulator (`pe_acc`) operating on Q8.24 fixed-point words. Internal memory arrays (`b`, `w`, `a`) are populated via `$readmemh` from `data/` memory files.
 
-`npu/tb.sv` instantiates `N = 4`, loads the internal arrays with `$readmemh`, sets the
-bias input to `7`, waits for `done`, and prints `result`. It does not compare the
-result with an expected value.
+`npu/tests/tb.sv` instantiates the DUT (`N = 2`), loads `data/bias.mem`, `data/weights.mem`, and `data/activations.mem`, executes multi-sample dot product evaluations, logs trace outputs via `$dumpfile` / `$dumpvars`, and displays formatted Q8.24 results.
 
-## Integration boundary
+## Integration Boundary
 
-The two implementations currently disagree at the file boundary:
+The Rust export module (`src/export.rs`) converts floating-point weights, biases, inputs, and targets into Q8.24 fixed-point hexadecimal words (`to_q8_24` with truncation):
 
-| Producer or consumer | Interpretation |
-|---|---|
-| Rust executable | Writes each weight as the hexadecimal bits of an IEEE-754 `f32` |
-| SystemVerilog module | Uses each loaded word as a signed 32-bit integer |
+| Artifact File | Format | Source Generator | Consumer |
+|---|---|---|---|
+| `weights.mem` | Q8.24 Hex | `export_model()` | `npu/src/npu.sv` (`w` array) |
+| `bias.mem` | Q8.24 Hex | `export_model()` | `npu/src/npu.sv` (`b` array) |
+| `activations.mem` | Q8.24 Hex | `export_data()` | `npu/tests/tb.sv` (`a` array) |
+| `target.mem` | Q8.24 Hex | `export_data()` | Testbench verification |
 
-Consequently, the generated Rust weights do not represent equivalent numeric values
-inside the NPU. There is no model-topology parser, parity test, or shared inference
-pipeline.
+The integration boundary shares the Q8.24 numeric representation with truncation semantics across Rust and SystemVerilog. Full end-to-end topology compilation and bit-exact golden vector assertions are governed by Phase 3 and Phase 4 roadmap milestones.

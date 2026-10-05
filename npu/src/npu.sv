@@ -18,8 +18,7 @@ module npu #(
   logic signed [31:0] w[N];
   logic signed [31:0] a[N];
 
-  localparam int IDXW = N == 1 ? 1 : $clog2(N);
-  logic [IDXW-1:0] i;
+  logic unsigned [$clog2(N):0] i;
 
   logic signed [63:0] pe_acc;
   pe u_pe (
@@ -49,7 +48,7 @@ module npu #(
           end
         end
         BUSY: begin
-          if (i == N - 1) begin
+          if (32'(i) == N) begin
             result <= pe_acc + 64'(b[0]);
             done <= 1;
             state <= IDLE;

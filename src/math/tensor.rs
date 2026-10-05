@@ -74,7 +74,7 @@ impl Tensor {
         self.shape.iter().product()
     }
 
-    pub fn transpose(mut &self) {
+    pub fn transpose(&mut self) {
         todo!("Transpose ope ins't implemmented yet!")
     }
 

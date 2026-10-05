@@ -49,11 +49,11 @@ pub fn to_q8_24(x: f32) -> u32 {
 The `as` cast truncates toward zero. Until both the exporter and the NPU arithmetic
 specification agree on rounding mode, **truncation remains the normative behavior**
 for v1 of this contract. Any change requires updating this specification, `src/export.rs`,
-and `npu/main.sv` in the same revision (Engineering Invariant 4 of the ROADMAP).
+and `npu/src/npu.sv` / `npu/src/pe.sv` in the same revision (Engineering Invariant 4 of the ROADMAP).
 
 ---
 
-## 3. Arithmetic Contract (SystemVerilog, `npu/main.sv`)
+## 3. Arithmetic Contract (SystemVerilog, `npu/src/`)
 
 ### 3.1 Multiplication
 

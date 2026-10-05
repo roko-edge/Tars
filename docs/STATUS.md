@@ -34,11 +34,12 @@ The package exports a `view` module backed by `petgraph`. `NetGraph::network_to_
 
 | Component | Status | Implementation Details |
 |---|---|---|
-| Dot Product | Implemented | Signed 32-bit product and accumulation operating on Q8.24 fixed-point words (`raw_mult[55:24]`) |
+| Processing Element | Implemented | `pe.sv` in `npu/src/` performs signed 32-bit product and accumulation in Q8.24 fixed-point (`raw_mult[55:24]`) |
+| NPU Top-Level | In Progress | `npu.sv` in `npu/src/` implements FSM control (`start`/`done`) and instantiates `pe` |
 | Vector Length | Parameterized | Parameter `N` (instantiated as `N=2` in testbench) |
 | Internal Storage | Implemented | Internal `bias[1]`, `weights[N]`, and `act[N]` arrays loaded via `$readmemh` |
 | Control Logic | Implemented | `clk`, `rst`, `start`, and `done` handshaking signals |
-| Testbench | Partial | Instantiates DUT and prints results; lacks self-checking assertions and VCD dump calls |
+| Testbench | Partial | `tests/tb.sv` instantiates DUT, enables `$dumpfile`/`$dumpvars`, but lacks automated pass/fail assertions and non-zero exit codes |
 
 ---
 
@@ -50,18 +51,17 @@ The package exports a `view` module backed by `petgraph`. `NetGraph::network_to_
 | `cargo run --bin main` | Available | Trains XOR model; note that export calls (`export_model`, `export_data`) are currently commented out in `src/bin/main.rs` |
 | `cargo run --bin visualization` | Available | Requires Graphviz; generates graph DOT and PNG artifacts |
 | `cargo test` | Available | Currently reports 0 tests; test suite introduction in progress |
-| `make sim` (from `npu/`) | Partial | Compiles `main.sv` and `tb.sv` using Icarus Verilog and prints output; lacks pass/fail checks |
-| `make sim2` | Broken | References absent `main2.sv` and `tb2.sv` files |
-| `make test` / `make all` | Broken | Depends on `sim2` |
-| `make wave` / `make wave2` | Broken | References absent VCD dump files |
-| `make lint` | Broken | Invocations reference absent ternary sources |
+| `make sim` (from `npu/`) | Partial | Compiles `src/pe.sv`, `src/npu.sv`, and `tests/tb.sv` using Icarus Verilog and prints output; lacks pass/fail checks |
+| `make test` / `make all` | Partial | Aliases `sim` |
+| `make wave` | Available | Runs GTKWave against `build/dump.vcd` generated from simulation |
+| `make lint` | Available | Runs Verilator lint-only checks on `src/` and `tests/` sources |
 | `make clean` | Available | Cleans NPU build outputs |
 
 ---
 
 ## Known Technical Limitations
 
-1. **Testbench Self-Checking:** The NPU testbench (`tb.sv`) prints result signals but does not assert equality against expected values or return a non-zero exit code on failure.
-2. **Q8.24 Rounding Strategy:** Rust export (`src/export.rs`) and SystemVerilog arithmetic (`npu/main.sv`) perform truncation (`as i32` / bit slicing) rather than round-half-to-even.
+1. **Testbench Self-Checking:** The NPU testbench (`tests/tb.sv`) prints result signals but does not assert equality against expected values or return a non-zero exit code on failure.
+2. **Q8.24 Rounding Strategy:** Rust export (`src/export.rs`) and SystemVerilog arithmetic (`npu/src/npu.sv`, `npu/src/pe.sv`) perform truncation (`as i32` / bit slicing) rather than round-half-to-even.
 3. **NPU Accumulator Width:** The NPU accumulator is 32 bits without saturation logic, susceptible to overflow on large vector sizes.
 4. **Vector Tensor Storage:** Linear layers and gradients currently allocate nested vectors (`Vec<Vec<f32>>`), requiring migration to contiguous `Tensor` storage.
