@@ -1,7 +1,6 @@
 use crate::Activation;
 use crate::AnyModule;
 use crate::Data;
-use crate::Linear;
 use crate::Module;
 use crate::Sequential;
 use crate::cost;

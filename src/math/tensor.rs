@@ -158,7 +158,7 @@ impl Tensor {
         assert_eq!(self.offset, tensor.offset, "offset doesn't match");
 
         let mut new_storage = self.storage.clone();
-        let mut storage = Arc::make_mut(&mut new_storage);
+        let storage = Arc::make_mut(&mut new_storage);
 
         for i in self.offset..storage.len() {
             storage[i] += tensor.storage[i];
@@ -176,7 +176,7 @@ impl Tensor {
         assert_eq!(self.shape, tensor.shape, "shape doesn't match");
         assert_eq!(self.offset, tensor.offset, "offset doesn't match");
 
-        let mut storage = Arc::make_mut(&mut self.storage);
+        let storage = Arc::make_mut(&mut self.storage);
 
         for i in self.offset..storage.len() {
             storage[i] += tensor.storage[i];
@@ -187,7 +187,7 @@ impl Tensor {
         assert_eq!(self.offset, tensor.offset, "offset doesn't match");
 
         let mut new_storage = self.storage.clone();
-        let mut storage = Arc::make_mut(&mut new_storage);
+        let storage = Arc::make_mut(&mut new_storage);
 
         for i in self.offset..storage.len() {
             storage[i] -= tensor.storage[i];
@@ -205,7 +205,7 @@ impl Tensor {
         assert_eq!(self.shape, tensor.shape, "shape doesn't match");
         assert_eq!(self.offset, tensor.offset, "offset doesn't match");
 
-        let mut storage = Arc::make_mut(&mut self.storage);
+        let storage = Arc::make_mut(&mut self.storage);
 
         for i in self.offset..storage.len() {
             storage[i] -= tensor.storage[i];
@@ -214,7 +214,7 @@ impl Tensor {
 
     pub fn mut_scalar(&self, s: f32) -> Self {
         let mut new_storage = self.storage.clone();
-        let mut storage = Arc::make_mut(&mut new_storage);
+        let storage = Arc::make_mut(&mut new_storage);
 
         for i in self.offset..self.storage.len() {
             storage[i] *= s;
@@ -229,7 +229,7 @@ impl Tensor {
     }
 
     pub fn mut_scalar_mut(&mut self, s: f32) {
-        let mut storage = Arc::make_mut(&mut self.storage);
+        let storage = Arc::make_mut(&mut self.storage);
 
         for i in self.offset..storage.len() {
             storage[i] *= s;
@@ -238,7 +238,7 @@ impl Tensor {
 
     pub fn div_scalar(&self, s: f32) -> Self {
         let mut new_storage = self.storage.clone();
-        let mut storage = Arc::make_mut(&mut new_storage);
+        let storage = Arc::make_mut(&mut new_storage);
 
         for i in self.offset..self.storage.len() {
             storage[i] /= s;
@@ -253,7 +253,7 @@ impl Tensor {
     }
 
     pub fn div_scalar_mut(&mut self, s: f32) {
-        let mut storage = Arc::make_mut(&mut self.storage);
+        let storage = Arc::make_mut(&mut self.storage);
 
         for i in self.offset..storage.len() {
             storage[i] *= s;
