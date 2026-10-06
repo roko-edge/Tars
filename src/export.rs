@@ -26,8 +26,8 @@ pub fn export_model(model: &Sequential) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 pub fn export_data(data: &[Data]) -> Result<(), Box<dyn Error>> {
-    let mut file_act = File::create("npu/activations.mem")?;
-    let mut file_target = File::create("npu/target.mem")?;
+    let mut file_act = File::create("npu/data/activations.mem")?;
+    let mut file_target = File::create("npu/data/target.mem")?;
     for sample in data {
         for input in &sample.input {
             writeln!(file_act, "{:08X}", to_q8_24(*input))?;
