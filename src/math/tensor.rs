@@ -154,34 +154,109 @@ impl Tensor {
     }
 
     pub fn add(&self, tensor: &Tensor) -> Self {
-        todo!("Finalizar adição");
+        assert_eq!(self.shape, tensor.shape, "shape doesn't match");
+        assert_eq!(self.offset, tensor.offset, "offset doesn't match");
+
+        let mut new_storage = self.storage.clone();
+        let mut storage = Arc::make_mut(&mut new_storage);
+
+        for i in self.offset..storage.len() {
+            storage[i] += tensor.storage[i];
+        }
+
+        Self {
+            storage: new_storage,
+            shape: self.shape.clone(),
+            strides: self.strides.clone(),
+            offset: 0,
+        }
     }
 
-    pub fn add_mut(&self, tensor: &Tensor) {
-        todo!("Finalizar adição mutável");
+    pub fn add_mut(&mut self, tensor: &Tensor) {
+        assert_eq!(self.shape, tensor.shape, "shape doesn't match");
+        assert_eq!(self.offset, tensor.offset, "offset doesn't match");
+
+        let mut storage = Arc::make_mut(&mut self.storage);
+
+        for i in self.offset..storage.len() {
+            storage[i] += tensor.storage[i];
+        }
     }
 
     pub fn sub(&self, tensor: &Tensor) -> Self {
-        todo!("Finalizar subtração");
+        assert_eq!(self.offset, tensor.offset, "offset doesn't match");
+
+        let mut new_storage = self.storage.clone();
+        let mut storage = Arc::make_mut(&mut new_storage);
+
+        for i in self.offset..storage.len() {
+            storage[i] -= tensor.storage[i];
+        }
+
+        Self {
+            storage: new_storage,
+            shape: self.shape.clone(),
+            strides: self.strides.clone(),
+            offset: 0,
+        }
     }
 
-    pub fn sub_mut(&self, tensor: &Tensor) {
-        todo!("Finalizar subtração mutável");
+    pub fn sub_mut(&mut self, tensor: &Tensor) {
+        assert_eq!(self.shape, tensor.shape, "shape doesn't match");
+        assert_eq!(self.offset, tensor.offset, "offset doesn't match");
+
+        let mut storage = Arc::make_mut(&mut self.storage);
+
+        for i in self.offset..storage.len() {
+            storage[i] -= tensor.storage[i];
+        }
     }
 
     pub fn mut_scalar(&self, s: f32) -> Self {
-        todo!("Finalizar multiplicação por escalar");
+        let mut new_storage = self.storage.clone();
+        let mut storage = Arc::make_mut(&mut new_storage);
+
+        for i in self.offset..self.storage.len() {
+            storage[i] *= s;
+        }
+
+        Self {
+            storage: new_storage,
+            shape: self.shape.clone(),
+            strides: self.strides.clone(),
+            offset: 0,
+        }
     }
 
-    pub fn mut_scalar_mut(&self, s: f32) {
-        todo!("Finalizar multiplicação por escalar mutável");
+    pub fn mut_scalar_mut(&mut self, s: f32) {
+        let mut storage = Arc::make_mut(&mut self.storage);
+
+        for i in self.offset..storage.len() {
+            storage[i] *= s;
+        }
     }
 
     pub fn div_scalar(&self, s: f32) -> Self {
-        todo!("Finalizar divisão por escalar");
+        let mut new_storage = self.storage.clone();
+        let mut storage = Arc::make_mut(&mut new_storage);
+
+        for i in self.offset..self.storage.len() {
+            storage[i] /= s;
+        }
+
+        Self {
+            storage: new_storage,
+            shape: self.shape.clone(),
+            strides: self.strides.clone(),
+            offset: 0,
+        }
     }
 
-    pub fn div_scalar_mut(&self, s: f32) {
-        todo!("Finalizar divisão por escalar mutável");
+    pub fn div_scalar_mut(&mut self, s: f32) {
+        let mut storage = Arc::make_mut(&mut self.storage);
+
+        for i in self.offset..storage.len() {
+            storage[i] *= s;
+        }
     }
 }
