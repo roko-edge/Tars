@@ -24,23 +24,31 @@ module tb;
   initial begin
     $dumpfile("build/dump.vcd");
     $dumpvars(0, tb);
+
     clk = 0;
+
     $readmemh("data/bias.mem", dut.b);
     $readmemh("data/weights.mem", dut.w);
     $readmemh("data/activations.mem", data);
-    for (int j = 0; j < OUT; ++j) begin
-      for (int i = 0; i < IN; i += 2) begin
-        rst   = 1;
-        start = 0;
-        #10;
-        rst = 0;
-        dut.a[0] = data[i];
-        dut.a[1] = data[i+1];
-        start = 1;
-        wait (done);
-        $display("entries: %0d %0d and the result is %0d\n", data[i], data[i+1], result[j]);
-      end
+
+
+
+    for (int s = 0; s < 4; ++s) begin
+      rst   = 1;
+      start = 0;
+      #10;
+      rst = 0;
+      dut.a[0] = data[s*2];
+      dut.a[1] = data[s*2+1];
+
+      #10;
+      start = 1;
+      #10;
+      start = 0;
+      wait (done);
+      $display("Entries:%d %d the result is %d\n", data[s*2], data[s*2+1], result[0]);
     end
+
     $finish;
   end
 endmodule

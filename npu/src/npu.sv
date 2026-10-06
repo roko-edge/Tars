@@ -24,6 +24,7 @@ module npu #(
   logic unsigned [$clog2(IN):0] i;
 
   logic signed [63:0] pe_acc;
+
   pe u_pe (
       .clk        (clk),
       .rst        (rst),
