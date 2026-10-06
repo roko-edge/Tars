@@ -31,6 +31,18 @@ module npu #(
       .accumulator(pe_acc)
   );
 
+  logic signed [63:0] sum64;
+  logic signed [31:0] sum32;
+
+  assign sum64 = pe_acc + 64'(b[0]);
+
+  always_comb begin
+    if (sum64 == 64'(signed'(sum64[31:0]))) begin
+      sum32 = sum64[31:0];
+    end else begin
+      sum32 = sum64[63] ? 32'sh8000_0000 : 32'sh7FFF_FFFF;
+    end
+  end
 
   always_ff @(posedge clk or posedge rst) begin
     if (rst) begin
@@ -49,7 +61,7 @@ module npu #(
         end
         BUSY: begin
           if (32'(i) == N) begin
-            result <= pe_acc + 64'(b[0]);
+            result <= sum32;
             done <= 1;
             state <= IDLE;
             i <= 0;
