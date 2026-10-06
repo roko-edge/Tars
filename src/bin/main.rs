@@ -2,7 +2,7 @@ use std::error::Error;
 use tars::{view::graph::NetGraph, *};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut train = experiments::xor::train();
+    let mut train = experiments::or::train();
 
     println!("Starting {:?} experiment...", train.experiment_type);
     println!("Check docs/experiments/ to check experiments API.");
