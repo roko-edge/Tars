@@ -18,6 +18,14 @@ impl Linear {
             bias,
         }
     }
+    pub fn zeros(in_sz: usize, out_sz: usize) -> Self {
+        Self {
+            in_sz,
+            out_sz,
+            weights: vec![vec![0.0; in_sz]; out_sz],
+            bias: vec![0.0; out_sz],
+        }
+    }
     pub fn random(in_sz: usize, out_sz: usize) -> Self {
         Self {
             in_sz,

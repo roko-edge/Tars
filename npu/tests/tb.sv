@@ -3,11 +3,13 @@ module tb;
   logic clk;
   logic rst;
   logic start;
-
-  logic signed [31:0] result;
+  localparam int IN  = 2;
+  localparam int OUT = 1;
+  logic signed [31:0] result[OUT];
   logic done;
   npu #(
-      .N(2)
+      .IN (IN),
+      .OUT(OUT)
   ) dut (
       .clk(clk),
       .rst(rst),
@@ -26,16 +28,18 @@ module tb;
     $readmemh("data/bias.mem", dut.b);
     $readmemh("data/weights.mem", dut.w);
     $readmemh("data/activations.mem", data);
-    for (int i = 0; i < 8; i += 2) begin
-      rst   = 1;
-      start = 0;
-      #10;
-      rst = 0;
-      dut.a[0] = data[i];
-      dut.a[1] = data[i+1];
-      start = 1;
-      wait (done);
-      $display("entries: %0d %0d and the result is %0d\n", data[i], data[i+1], result);
+    for (int j = 0; j < OUT; ++j) begin
+      for (int i = 0; i < IN; i += 2) begin
+        rst   = 1;
+        start = 0;
+        #10;
+        rst = 0;
+        dut.a[0] = data[i];
+        dut.a[1] = data[i+1];
+        start = 1;
+        wait (done);
+        $display("entries: %0d %0d and the result is %0d\n", data[i], data[i+1], result[j]);
+      end
     end
     $finish;
   end

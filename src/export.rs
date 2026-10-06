@@ -8,8 +8,8 @@ pub fn to_q8_24(x: f32) -> u32 {
     ((x * 16_777_216.0) as i32) as u32
 }
 pub fn export_model(model: &Sequential) -> Result<(), Box<dyn Error>> {
-    let mut file_weights = File::create("npu/weights.mem")?;
-    let mut file_bias = File::create("npu/bias.mem")?;
+    let mut file_weights = File::create("npu/data/weights.mem")?;
+    let mut file_bias = File::create("npu/data/bias.mem")?;
     for module in &model.modules {
         match module {
             AnyModule::Linear(linear) => {
