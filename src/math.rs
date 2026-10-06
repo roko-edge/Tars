@@ -8,6 +8,10 @@ pub fn random_vec(len: usize) -> Vec<f32> {
     }
     vector
 }
+
+//  Random weight initizalization function.
+// TODO: This function should Implement some weight initialization algorithms (Xavier/Glorot, He/Kaiming) with deterministic seed support
+
 pub fn random_mat(lenx: usize, leny: usize) -> Vec<Vec<f32>> {
     let mut mat = vec![vec![0.0; lenx]; leny];
     for l in &mut mat {

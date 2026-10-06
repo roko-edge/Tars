@@ -69,7 +69,7 @@ for contract sign-off and verification).
 ### Intersections Specification
 
 | Intersection | Subsystem | Lead (Owner) | Peer Reviewer | Joint Scope & Deliverables |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **1** | **Network Architecture (`Model` vs `Sequential`)** | Arthur | Gustavo | `Module` trait definition, parameter tracking, topologically ordered IR extraction, and deprecation of monolithic `Sequential`. |
 | **2** | **Tensor Core & Mathematical Foundations** | Gildo | Gustavo | Strided memory layout, zero-copy views (`strides`, `offset`), multidimensional broadcasting rules, and copy-on-write semantics, verified against `docs/engineering/specs/TENSOR.md`. |
 | **3** | **Compute Engine & Tensorized Backprop** | Gildo | Arthur | Batched tensor arithmetic (`matmul`, element-wise), elimination of `Vec<Vec<f32>>`, tensorized analytical backprop, and memory export mapping. |
@@ -112,7 +112,7 @@ Phases are strictly ordered by dependency, not by calendar. Each phase is comple
 ### Phase 2: Core Abstractions and Hardware Upgrades
 
 - **Gustavo:**
-  - Implement weight initialization algorithms (Xavier/Glorot, He/Kaiming, and ternary $\{-1, 0, +1\}$ distribution) with deterministic seed support.
+  - Implement weight initialization algorithms (Xavier/Glorot, He/Kaiming) with deterministic seed support.
   - Build comprehensive unit test suite in `src/tests/` for tensor storage, shapes, strides, and dimension assertions.
   - Design benchmark harness for tracking loss curves, training convergence rates, and memory allocations.
   - Implement dataset loading and batching pipeline for MNIST.
