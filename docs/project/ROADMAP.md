@@ -91,14 +91,16 @@ Phases are strictly ordered by dependency, not by calendar. Each phase is comple
 ### Phase 1: Contracts and Deterministic Baselines
 
 - **Arthur:**
+  x Sanitize `npu/Makefile`: eliminate broken simulation/ternary targets, wire up automated Verilator linting (`make lint`).
+  x Upgrade `npu/tests/tb.sv` to support `$dumpfile` and `$dumpvars` for GTKWave tracing.
   - Author normative specifications: `docs/engineering/specs/MODEL_TRAIT.md` and `docs/engineering/specs/ARITHMETIC_Q8_24.md`.
-  - Sanitize `npu/Makefile`: eliminate broken simulation/ternary targets, wire up automated Verilator linting (`make lint`).
-  - Upgrade `npu/tests/tb.sv` to support `$dumpfile` and `$dumpvars` for GTKWave tracing.
+
 - **Gustavo:**
-  - Author normative specification: `docs/engineering/specs/TENSOR.md`.
-  - Implement deterministic pseudo-random number generator (PRNG) with explicit seed support (replacing unseeded uniform randoms).
+  x Author normative specification: `docs/engineering/specs/TENSOR.md`.
+  x Implement deterministic pseudo-random number generator (PRNG) with explicit seed support (replacing unseeded uniform randoms).
+  x Implement baseline `cargo test` harness in `src/tests/` for automated Rust regression testing.
   - Construct baseline characterization tests: capture loss trajectories and canonical weights for OR and XOR models using current engine.
-  - Implement baseline `cargo test` harness in `src/tests/` for automated Rust regression testing.
+
 - **Gildo:**
   - Review `docs/engineering/specs/TENSOR.md` for algorithm suitability.
   - Implement tensor element-wise arithmetic kernels (`add`, `sub`, `mul`, `div`) respecting strided storage.
