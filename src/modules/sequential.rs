@@ -18,7 +18,7 @@ impl Sequential {
     }
 
     pub fn linear(mut self, output_size: usize) -> Self {
-        let linear = Linear::zeros(self.input_size, output_size);
+        let linear = Linear::random(self.input_size, output_size);
         self.modules.push(AnyModule::Linear(linear));
         self.input_size = output_size;
         self

@@ -1,10 +1,12 @@
 use crate::AnyModule;
+use crate::math::*;
 use crate::sequential::Sequential;
 use core::fmt;
 use petgraph::dot::Config;
 use petgraph::dot::Dot;
 use petgraph::graph::DiGraph;
 use petgraph::prelude::*;
+use std::collections::btree_set::Intersection;
 use std::fmt::Debug;
 use std::fs;
 use std::io::Result;
@@ -23,7 +25,7 @@ impl Perceptron {
 
 impl fmt::Display for Perceptron {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.id)
+        write!(f, "")
     }
 }
 
@@ -50,6 +52,8 @@ impl NetGraph {
     }
 
     pub fn network_to_graph(&mut self, model: &Sequential, input: &[f32]) {
+        assert_eq!(model.modules[0].as_linear().in_sz, input.len());
+
         for i in 0..input.len() {
             self.add_node(Perceptron::new(i));
         }
@@ -86,19 +90,10 @@ impl NetGraph {
             &|_, edge| {
                 let weight = *edge.weight();
 
-                let intensity = weight.clamp(-1.0, 1.0);
-                let bright = (intensity * 255.0) as u8;
-                let light = ((intensity * -255.0) as i8) as u8;
+                let intensity = weight.abs().clamp(0.0, 1.0);
+                let gray = ((1.0 - intensity) * 255.0) as u8;
 
-                if weight >= 0.0 {
-                    format!(r##"color="#0000{0:02x}""##, bright)
-                } else {
-                    format!(
-                        r##"color="#{0:02x}0000
-                        ""##,
-                        light
-                    )
-                }
+                format!(r##"color="#{0:02x}{0:02x}{0:02x}""##, gray)
             },
             &|_, _| String::new(),
         );
@@ -117,16 +112,16 @@ impl NetGraph {
             .arg("-Gbgcolor=#000000")
             .arg("-Grankdir=LR")
             .arg("-Gsplines=spline")
-            .arg("-Gnodesep=0.8")
-            .arg("-Granksep=1.5 equally")
+            .arg("-Gnodesep=0.9")
+            .arg("-Granksep=5.0 equally")
             .arg("-Epenwidth=1.0")
             .arg("-Nshape=circle")
             .arg("-Nfixedsize=true")
             .arg("-Nwidth=0.6")
             .arg("-Nheight=0.6")
-            .arg("-Nfontcolor=white")
-            .arg("-Ncolor=#FFFFFF")
-            .arg("-Ecolor=#FFFFFF")
+            // .arg("-Nfontcolor=white")
+            .arg("-Ncolor=#FFFFFF") // Neuron color
+            // .arg("-Ecolor=#FFFFFF")
             .arg("-Efontcolor=white")
             .arg("-Earrowhead=none")
             .arg("-Tpng")

@@ -8,7 +8,7 @@
 
 <p align="center">
   Experimental neural networks in Rust.<br />
-  A standalone dot-product prototype in SystemVerilog.
+  A Q8.24 affine-layer prototype in SystemVerilog.
 </p>
 
 <p align="center">
@@ -21,13 +21,13 @@
 ---
 
 `tars` is an experimental neural-network implementation written in Rust alongside a
-standalone SystemVerilog dot-product prototype. The Rust code provides dense layers,
-ReLU and sigmoid activations, sequential model composition, mean squared error,
+SystemVerilog affine-layer prototype. The Rust code provides dense layers, ReLU and
+sigmoid activations, sequential model composition, mean squared error, analytical and
 finite-difference gradients, and batch gradient descent.
 
-The Rust and SystemVerilog implementations are not currently integrated. In
-particular, the Rust weight output uses IEEE-754 bit patterns while the NPU performs
-signed integer arithmetic.
+The Rust exporter writes Q8.24 weights, biases, activations, and targets under
+`npu/data/`. The NPU testbench consumes the first three; model topology is not
+exported, and results are not validated against the targets.
 
 ## Requirements
 
@@ -52,15 +52,16 @@ cargo run --bin visualization
 cargo test
 ```
 
-`main` prompts for the `or` or `xor` experiment, trains the selected model, prints
-its predictions, and overwrites `npu/weights.mem`. The output file contains only
-linear-layer weights; it does not contain biases or model topology.
+`main` runs the OR experiment selected in source, trains the model, prints its
+predictions, and overwrites the four `.mem` files under `npu/data/`. There is no
+runtime experiment selector, and the export does not contain model topology.
 
 `visualization` writes `src/view/artifacts/graph.dot` and invokes Graphviz to create
-`src/view/artifacts/network.png`. It renders a hard-coded graph rather than the
-trained model.
+`src/view/artifacts/network.png`. It renders its own hard-coded model rather than the
+model trained by `main`.
 
-There are currently no automated Rust tests.
+The active Rust tests cover the PRNG and Xavier initialization. Tensor tests are
+currently commented out.
 
 ## SystemVerilog
 
@@ -68,22 +69,23 @@ From `npu/`:
 
 ```bash
 make sim
+make wave
+make lint
 make clean
 ```
 
-`make sim` compiles `main.sv` and `tb.sv` and prints the result signal. The
-testbench does not assert an expected result, and the checked-in `weights.mem` does
-not provide all four values expected by the configured module. Other Make targets
-are currently incomplete; see [`npu/README.md`](npu/README.md).
+`make sim` compiles `src/pe.sv`, `src/npu.sv`, and `tests/tb.sv`, then prints the
+result signals. The testbench does not assert expected results or read `target.mem`.
+See [`npu/README.md`](npu/README.md) for the remaining targets and limitations.
 
 ## Documentation
 
-See [`docs/README.md`](docs/README.md) for the master navigation map, team roles, and specifications.
+See [`docs/README.md`](docs/README.md) for user documentation and navigation by task.
 
 | Key Reference | Scope |
 |---|---|
-| [`docs/README.md`](docs/README.md) | **Master Navigation Map & Team Guide** |
-| [`docs/specs/V0_CONTRACT.md`](docs/specs/V0_CONTRACT.md) | **TARS v0.1.0 Release Contract:** MNIST, NPU, Quantization & Paper Scope |
-| [`docs/roadmap/ROADMAP.md`](docs/roadmap/ROADMAP.md) | Team distribution (Arthur, Gustavo, Gildo) and sequential phase milestones |
-| [`docs/STATUS.md`](docs/STATUS.md) | Current implementation state and known limitations |
+| [`docs/README.md`](docs/README.md) | User documentation entry point |
+| [`docs/project/V0_CONTRACT.md`](docs/project/V0_CONTRACT.md) | v0.1.0 release target and acceptance criteria |
+| [`docs/project/ROADMAP.md`](docs/project/ROADMAP.md) | Project milestones and ownership |
+| [`docs/project/STATUS.md`](docs/project/STATUS.md) | Current implementation state and known limitations |
 | [`AGENTS.md`](AGENTS.md) | Repository automation policy for AI tools |

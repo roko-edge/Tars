@@ -114,7 +114,10 @@ Phases are strictly ordered by dependency, not by calendar. Each phase is comple
 ### Phase 2: Core Abstractions and Hardware Upgrades
 
 - **Gustavo:**
-  - Implement weight initialization algorithms (Xavier/Glorot, He/Kaiming) with deterministic seed support.
+  . Implement weight initialization algorithms with deterministic seed suport:
+  x Xavier.
+  - Kaiming.
+
   - Build comprehensive unit test suite in `src/tests/` for tensor storage, shapes, strides, and dimension assertions.
   - Design benchmark harness for tracking loss curves, training convergence rates, and memory allocations.
   - Implement dataset loading and batching pipeline for MNIST.

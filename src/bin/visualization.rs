@@ -1,5 +1,5 @@
 use std::io::Result;
-use tars::Sequential;
+use tars::sequential::*;
 use tars::view::graph::*;
 
 // TODO Create a module to dot to png handler
@@ -14,16 +14,17 @@ Proposed design:
  */
 
 fn main() -> Result<()> {
-    let model = Sequential::new(3)
-        .linear(4)
+    let model = Sequential::new(4)
+        .linear(8)
         .relu()
-        .linear(3)
-        .sigmoid()
-        .linear(3)
-        .sigmoid()
-        .linear(1);
+        .linear(10)
+        .relu()
+        .linear(8)
+        .relu()
+        .linear(2)
+        .relu();
 
-    let input = vec![1.0, 2.0, 3.0];
+    let input = vec![1.0, 0.676767, 1.0, 2.0];
 
     let mut net = NetGraph::new();
 
