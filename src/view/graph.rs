@@ -6,7 +6,6 @@ use petgraph::dot::Config;
 use petgraph::dot::Dot;
 use petgraph::graph::DiGraph;
 use petgraph::prelude::*;
-use std::collections::btree_set::Intersection;
 use std::fmt::Debug;
 use std::fs;
 use std::io::Result;
