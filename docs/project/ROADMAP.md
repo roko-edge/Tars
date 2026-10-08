@@ -71,16 +71,16 @@ for contract sign-off and verification).
 | Intersection | Subsystem | Lead (Owner) | Peer Reviewer | Joint Scope & Deliverables |
 | --- | --- | --- | --- | --- |
 | **1** | **Network Architecture (`Model` vs `Sequential`)** | Arthur | Gustavo | `Module` trait definition, parameter tracking, topologically ordered IR extraction, and deprecation of monolithic `Sequential`. |
-| **2** | **Tensor Core & Mathematical Foundations** | Gildo | Gustavo | Strided memory layout, zero-copy views (`strides`, `offset`), multidimensional broadcasting rules, and copy-on-write semantics, verified against `docs/engineering/specs/TENSOR.md`. |
-| **3** | **Compute Engine & Tensorized Backprop** | Gildo | Arthur | Batched tensor arithmetic (`matmul`, element-wise), elimination of `Vec<Vec<f32>>`, tensorized analytical backprop, and memory export mapping. |
-| **4** | **NPU Co-Processor & Parity Co-Simulation** | Arthur | Gildo | Multi-neuron Layer Engine FSM, 64-bit saturating accumulator, self-checking testbench (`tb.sv`), and golden-model bit-exact test suite. |
+| **2** | **Tensor Core, Layout & Data Types** | Gildo (Layout) / Gustavo (DType) | Gustavo / Gildo | Strided memory layout, zero-copy views (`strides`, `offset`), multidimensional broadcasting rules, and copy-on-write semantics (Gildo); `DType` abstraction (`F32`, `Q8_24`, `Ternary`), ternary storage representations, and mixed-precision operations (Gustavo). |
+| **3** | **Compute Engine, Tensorized Backprop & Quantization** | Gildo (Float) / Gustavo (Ternary) | Arthur / Gildo | Batched tensor float arithmetic (`matmul`, element-wise), elimination of `Vec<Vec<f32>>`, and tensorized analytical backprop (Gildo); ternary weight kernels, mixed-precision `matmul` ($\text{act} \times \text{ternary}$), and ternary quantizer logic (Gustavo). |
+| **4** | **NPU Co-Processor, Parity & Ternary RTL** | Arthur | Gildo | Multi-neuron Layer Engine FSM, configurable Q8.24 and ternary MAC arithmetic modes, 64-bit saturating accumulator, self-checking testbench (`tb.sv`), and golden-model bit-exact test suite. |
 | **5** | **Stochasticity, Numerical Controls & Benchmark Analytics** | Gustavo | Gildo | Deterministic PRNG harness, random weight initialization algorithms (Xavier/Glorot, He/Kaiming, ternary), Rust test suite, dataset loading, metric computation, and empirical research analysis. |
 
 ### Domain Responsibility Summary
 
-- **Arthur** owns NPU microarchitecture (`npu.sv`, `pe.sv`), hardware testing (`npu/tests/tb.sv`), Verilator linting, VCD tracing, `Module` trait design, `Model<M>` container, and Q8.24 export tooling (`src/export.rs`). He supplies raw hardware metrics (cycle latency, resource utilization, parity outcomes) to Gustavo for benchmark aggregation.
-- **Gustavo** owns stochastic weight generation (seeded PRNG, Xavier/He, ternary sampling), numerical controls (gradient validation with $\epsilon \le 10^{-4}$, Q8.24 conversion error analysis, saturation checks), the automated Rust test suite (`src/tests/`, `cargo test`), dataset loaders (MNIST), and all benchmark harnesses, metric computation, and empirical analyses published to `docs/project/research/`.
-- **Gildo** owns the tensorized execution engine (`matmul`, element-wise kernels, axis reductions), `Linear` layer migration to contiguous `Tensor`, tensorized `backward()`, and serves as official RTL reviewer for the NPU (`npu.sv`, `pe.sv`, `tb.sv`), auditing FSM correctness, saturation logic, and parity co-simulation. He supplies engine profiling data to Gustavo for benchmark aggregation.
+- **Arthur** owns NPU microarchitecture (`npu.sv`, `pe.sv`), hardware execution modes (Q8.24 MAC and ternary conditional accumulation), hardware testing (`npu/tests/tb.sv`), Verilator linting, VCD tracing, `Module` trait design, `Model<M>` container, and hardware manifest export tooling (`src/export.rs`). He supplies raw hardware metrics (cycle latency, resource utilization, parity outcomes) to Gustavo for benchmark aggregation.
+- **Gustavo** owns the `DType` enum on `Tensor`, ternary tensor operations (mixed-precision matmul, conditional additions/subtractions with scale $W_0$), mathematical quantization algorithms in `src/quant/` (threshold $\Delta$ and scale $W_0$), stochastic weight generation (seeded PRNG, Xavier/He, ternary sampling), numerical controls (gradient validation with $\epsilon \le 10^{-4}$, Q8.24 and ternary quantization error analysis, saturation checks), the automated Rust test suite (`src/tests/`, `cargo test`), dataset loaders (MNIST), and benchmark harnesses.
+- **Gildo** owns the continuous tensor execution engine (float `matmul`, element-wise float kernels, axis reductions), tensor memory layout (strides, views, broadcasting, COW), `Linear` layer migration to contiguous `Tensor`, tensorized continuous `backward()`, and serves as official RTL reviewer for the NPU (`npu.sv`, `pe.sv`, `tb.sv`), auditing FSM correctness, saturation logic, and parity co-simulation. He supplies engine profiling data to Gustavo for benchmark aggregation.
 
 ---
 
@@ -118,6 +118,7 @@ conditions are met and peer reviews are recorded.
 ### Phase 2: Core Abstractions and Hardware Upgrades
 
 - **Gustavo:**
+  - [ ] Implement `DType` enum (`F32`, `Q8_24`, `Ternary`) on `Tensor` in `src/math/tensor.rs`.
   - [ ] Implement weight initialization algorithms (Xavier/Glorot, He/Kaiming, and ternary $\{-1, 0, +1\}$ distribution) with deterministic seed support.
   - [ ] Build comprehensive unit test suite in `src/tests/` for tensor storage, shapes, strides, and dimension assertions.
   - [ ] Design benchmark harness for tracking loss curves, training convergence rates, and memory allocations.
@@ -133,11 +134,11 @@ conditions are met and peer reviews are recorded.
   - [x] Upgrade NPU microarchitecture: expand the accumulator to 64 bits with final saturation logic (signed ReLU activation unit remains pending).
   - [ ] Maintain hardware testbench in `npu/tests/tb.sv` and supply raw cycle count metrics to Gustavo.
 
-**Phase 2 Gate:** Matrix multiplication and tensor views pass automated unit tests (`cargo test`). NPU RTL compiles cleanly under Verilator without warnings and passes Gildo's peer review.
+**Phase 2 Gate:** Matrix multiplication, tensor views, and `DType` abstractions pass automated unit tests (`cargo test`). NPU RTL compiles cleanly under Verilator without warnings and passes Gildo's peer review.
 
 ---
 
-### Phase 3: Engine Convergence and Tensorized Backpropagation
+### Phase 3: Engine Convergence, Tensorized Backpropagation, and Ternary Support
 
 - **Gildo (Lead) & Arthur (Pair):**
   - [ ] Migrate `Linear` layer to store weights and biases as contiguous `Tensor` instances.
@@ -145,15 +146,18 @@ conditions are met and peer reviews are recorded.
   - [ ] Eliminate redundant model cloning in gradient structures (`Grad`).
   - [ ] Review NPU multi-cycle Layer Engine FSM implementation.
 - **Gustavo:**
+  - [ ] Implement ternary weight compute kernels: mixed-precision `matmul` ($\text{act} \times \text{ternary}$) with conditional accumulation and scaling by $W_0$.
+  - [ ] Implement mathematical quantization algorithms in `src/quant/` mapping continuous floats to ternary states $\{-W_0, 0, +W_0\}$.
   - [ ] Execute numerical gradient validation: verify analytical tensor backprop against finite differences (`num_grad`) with tolerance $\epsilon \le 10^{-4}$.
-  - [ ] Conduct quantitative analysis of quantization error ($f32 \to \text{Q8.24}$) and saturation effects.
+  - [ ] Conduct quantitative analysis of quantization error ($f32 \to \text{Q8.24}$ and ternary loss bounds) and saturation effects.
   - [ ] Run benchmark suite on XOR and multi-layer configurations; log performance metrics, convergence curves, and memory profiles into `docs/project/research/`.
 - **Arthur:**
   - [x] Design multi-cycle Layer Engine FSM in `npu/src/npu.sv` for sequential computation of $M$ output neurons from $N$ inputs (multi-layer chaining and activation units remain pending).
-  - [ ] Implement `Model::compile_to_manifest()` exporting layer descriptors and Q8.24 weights.
+  - [ ] Implement configurable NPU execution modes: 32-bit Q8.24 MAC and ternary multiply-accumulate.
+  - [ ] Implement `Model::compile_to_manifest()` exporting layer descriptors, Q8.24 weights/biases, and ternary codebook scale parameters.
   - [ ] Maintain hardware simulation suite and deliver cycle timing data to Gustavo.
 
-**Phase 3 Gate:** Training loop converges on XOR using pure `Tensor` backend. Numerical gradient check passes ($\epsilon \le 10^{-4}$). NPU Layer Engine FSM passes simulation and Gildo's RTL review.
+**Phase 3 Gate:** Training loop converges on XOR using pure `Tensor` backend. Numerical gradient check passes ($\epsilon \le 10^{-4}$). Ternary mixed-precision operations pass verification against golden software vectors. NPU Layer Engine FSM passes simulation and Gildo's RTL review.
 
 ---
 

@@ -41,8 +41,8 @@ pub trait Module: std::fmt::Debug {
 ```
 
 #### Contract Expectations
-- `forward`: Accepts an input tensor (contiguous or strided) and evaluates the transformation, returning the resulting tensor without mutating internal layer state.
-- `parameters`: Collects immutable references to all parameter tensors owned by the module (e.g., weights and biases).
+- `forward`: Accepts an input tensor (contiguous or strided, verifying compatibility across `DType` representations) and evaluates the transformation, returning the resulting tensor without mutating internal layer state.
+- `parameters`: Collects immutable references to all parameter tensors owned by the module (e.g., weights and biases, which may carry continuous `F32` or quantized `Ternary` `DType` variants).
 - `parameters_mut`: Collects mutable references to all parameter tensors in identical order, enabling in-place parameter updates during optimization.
 
 ---

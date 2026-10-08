@@ -14,7 +14,7 @@ This document reflects the current state of the repository as of October 2026.
 | Sequential Model | Implemented | `Sequential` stores `Vec<AnyModule>`; the tensor-based replacement is specified under `docs/engineering/` |
 | Dense Layer | Implemented | `Linear` uses `Vec<Vec<f32>>` weights and `Vec<f32>` biases |
 | Activations | Implemented | ReLU and Sigmoid modules |
-| Tensor Core | In Progress | `Tensor` struct in `src/math/tensor.rs` with `Arc` storage, shapes, strides, contiguity check, zero-copy `transpose` variants, element-wise `add`/`sub`, scalar multiply/divide with in-place variants, `zeros`, `random_uniform`, and `dot_product`; element-wise kernels iterate raw storage and do not respect arbitrary strides |
+| Tensor Core | In Progress | `Tensor` struct in `src/math/tensor.rs` with `Arc` storage, shapes, strides, contiguity check, zero-copy `transpose` variants, element-wise `add`/`sub`, scalar multiply/divide with in-place variants, `zeros`, `random_uniform`, and `dot_product`; element-wise kernels iterate raw storage and do not respect arbitrary strides; `DType` abstraction and ternary mixed-precision kernels are planned under Gustavo's domain |
 | Loss Function | Implemented | Mean Squared Error (MSE) across outputs and dataset samples |
 | Analytical Backpropagation | Implemented | Full analytical backprop in `src/optim/grad.rs` (`backward()`) |
 | Finite-Difference Gradient | Implemented | Centered finite differences in `src/optim/grad.rs` (`num_grad()`), retained for verification |

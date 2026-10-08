@@ -39,14 +39,17 @@ tars/
 
 ### 2.1 Complete Tensor Engine (`src/math/tensor.rs`)
 - Full N-dimensional contiguous and strided `Tensor` implementation with `Arc` storage.
+- Explicit data type representation via `DType` enum (`F32`, `Q8_24`, `Ternary`).
 - Zero-copy view transformations: `slice`, `transpose`, `reshape`, `permute`.
 - Multidimensional NumPy-compliant broadcasting.
-- High-performance row-major matrix multiplication (`matmul`) and axis reductions (`sum`, `mean`).
+- High-performance row-major matrix multiplication (`matmul`) for float tensors, and mixed-precision matrix multiplication for ternary weight tensors.
+- Axis reductions (`sum`, `mean`).
 - Copy-on-Write (COW) mutation semantics via `make_contiguous_mut`.
 
 ### 2.2 Quantization & Ternary Engine (`src/quant/`)
 - **Q8.24 Fixed-Point Engine:** Quantization of continuous floats into signed 32-bit Q8.24 integers.
 - **Ternary Quantization Engine ($\{-1, 0, +1\}$):** Weight quantization mapping parameters to ternary states $\{-W_0, 0, +W_0\}$ with scaling factor $W_0$.
+- **Ternary Compute Operations:** Tensor-level mixed-precision dot products reducing continuous/fixed-point activations against ternary weights via conditional add/sub/zero accumulation.
 - **Quantization-Aware Export:** Export pipeline emitting layer manifests, Q8.24 files (`weights.mem`, `bias.mem`), and ternary codebook parameters.
 
 ### 2.3 Respective NPU Hardware (`npu/`)

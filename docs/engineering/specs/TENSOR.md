@@ -1,25 +1,33 @@
-# Specification: Tensor Storage, Strides, and Memory Layout
+# Specification: Tensor Storage, Strides, Data Types, and Memory Layout
 
 **Status:** Target contract for an incomplete subsystem. The current `Tensor`
 implementation provides construction (including zeros), indexing, mutation, element
 count, contiguity inspection, zero-copy transpose variants, element-wise add/sub,
 scalar multiply and divide with in-place variants, a storage-based dot product, and
 shape, strides, and offset accessors. Element-wise kernels iterate raw storage and do
-not respect arbitrary strides; slicing, reshaping, permutation, broadcasting, and
-reductions are not implemented.
+not respect arbitrary strides; slicing, reshaping, permutation, broadcasting,
+reductions, `DType` abstractions, and ternary/mixed-precision operations are not
+implemented.
 
 This document defines the normative memory layout, striding rules, view transformations,
-and broadcasting semantics for `Tensor` in `src/math/tensor.rs`.
+data type abstractions (`DType`), and broadcasting semantics for `Tensor` in `src/math/tensor.rs`.
 
 ---
 
-## 1. Data Structure Invariants
+## 1. Data Structure Invariants and Data Type Representation
 
-A `Tensor` represents an n-dimensional view over a shared, linear storage buffer.
+A `Tensor` represents an n-dimensional view over a shared, linear storage buffer with an explicit element data type (`DType`).
 
 ```rust
+pub enum DType {
+    F32,
+    Q8_24,
+    Ternary,
+}
+
 pub struct Tensor {
     storage: Arc<Vec<f32>>,
+    dtype: DType,
     shape: Vec<usize>,
     strides: Vec<usize>,
     offset: usize,
@@ -34,10 +42,24 @@ pub struct Tensor {
    must satisfy $0 \le \text{idx} < \text{storage.len()}$.
 4. A tensor is **contiguous (row-major / C-order)** if and only if:
    $$\text{strides}[D-1] = 1 \quad \text{and} \quad \text{strides}[k] = \text{strides}[k+1] \cdot \text{shape}[k+1] \quad \forall k \in [0, D-2]$$
+5. `dtype` indicates the numerical interpretation of the storage. For `DType::Ternary`, logical elements represent states in $\{-1, 0, +1\}$ scaled by a parameter-level scale factor $W_0$.
 
 ---
 
-## 2. Zero-Copy View Transformations
+## 2. Ternary and Mixed-Precision Compute Engine Contract
+
+Operations involving ternary weight tensors ($\{-1, 0, +1\}$) and continuous or fixed-point activation tensors must comply with the following computation rules:
+
+### 2.1 Mixed-Precision Matrix Multiplication ($A_{\text{float/Q8.24}} \times B_{\text{ternary}}$)
+When evaluating a layer with ternary weights $W \in \{-W_0, 0, +W_0\}^{O \times I}$ against activation $A$:
+1. Floating-point/Q8.24 multiplications between activation elements and ternary weight states must be reduced to conditional addition, subtraction, or zero-accumulation:
+   $$y_i = b_i + W_0 \sum_{j \in S_+} a_j - W_0 \sum_{j \in S_-} a_j$$
+   where $S_+ = \{j \mid w_{ij} = +1\}$ and $S_- = \{j \mid w_{ij} = -1\}$.
+2. The scale factor $W_0$ is applied once per dot-product reduction or accumulated output to minimize floating-point scaling operations.
+
+---
+
+## 3. Zero-Copy View Transformations
 
 View operations modify `shape`, `strides`, and `offset` without copying or reallocating the underlying storage buffer.
 
@@ -59,7 +81,7 @@ Slicing axis $k$ from $start$ to $end$ with step $step$:
 
 ---
 
-## 3. Storage Mutation and Copy-on-Write (COW)
+## 4. Storage Mutation and Copy-on-Write (COW)
 
 Shared storage buffers are protected through atomic reference counting (`Arc`).
 
@@ -69,7 +91,7 @@ Shared storage buffers are protected through atomic reference counting (`Arc`).
 
 ---
 
-## 4. Multidimensional Broadcasting Rules
+## 5. Multidimensional Broadcasting Rules
 
 Two shapes are compatible for broadcasting if, aligning dimensions from right to left:
 1. They are equal, or
