@@ -1,8 +1,12 @@
 # Specification: Tensor Storage, Strides, and Memory Layout
 
 **Status:** Target contract for an incomplete subsystem. The current `Tensor`
-implementation provides only basic construction, indexing, mutation, element count,
-and contiguity inspection.
+implementation provides construction (including zeros), indexing, mutation, element
+count, contiguity inspection, zero-copy transpose variants, element-wise add/sub,
+scalar multiply and divide with in-place variants, a storage-based dot product, and
+shape, strides, and offset accessors. Element-wise kernels iterate raw storage and do
+not respect arbitrary strides; slicing, reshaping, permutation, broadcasting, and
+reductions are not implemented.
 
 This document defines the normative memory layout, striding rules, view transformations,
 and broadcasting semantics for `Tensor` in `src/math/tensor.rs`.

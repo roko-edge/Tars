@@ -6,8 +6,8 @@
 specifications or proposals and are identified explicitly.
 
 The repository contains one Rust package and one SystemVerilog prototype. They share
-the Q8.24 numeric representation, but they do not yet share an operational artifact
-path or a model topology format.
+the Q8.24 numeric representation and the `npu/data/` artifact paths, but they do not yet
+share a model topology format or an automated parity check.
 
 ## Repository structure
 
@@ -41,7 +41,7 @@ src/
     main.rs               Training executable with source-selected experiment
     visualization.rs      Hard-coded graph visualization executable
 npu/
-  src/npu.sv              Parameterized dot-product controller
+  src/npu.sv              Parameterized single-layer affine controller (`IN`, `OUT`)
   src/pe.sv               Multiply-accumulate processing element
   tests/tb.sv             Simulation testbench
   data/                    Memory files consumed by the testbench
@@ -80,7 +80,9 @@ impl Sequential {
 ```
 
 `Linear` stores weights as `Vec<Vec<f32>>`, indexed by output feature and then input
-feature. Biases are stored as `Vec<f32>`.
+feature. Biases are stored as `Vec<f32>`. `Sequential::linear` constructs layers
+through the zeros constructor; the random constructor is not used by the built-in
+experiments.
 
 ```rust
 impl Linear {
@@ -90,6 +92,7 @@ impl Linear {
         weights: Vec<Vec<f32>>,
         bias: Vec<f32>,
     ) -> Self;
+    pub fn zeros(in_sz: usize, out_sz: usize) -> Self;
     pub fn random(in_sz: usize, out_sz: usize) -> Self;
 }
 ```
@@ -161,19 +164,20 @@ the main executable.
 
 ```systemverilog
 module npu #(
-    parameter int N = 2
+    parameter int IN  = 2,
+    parameter int OUT = 2
 ) (
     input  logic               clk,
     input  logic               rst,
     input  logic               start,
     output logic               done,
-    output logic signed [31:0] result
+    output logic signed [31:0] result[OUT]
 );
 ```
 
-The top-level NPU module uses a state machine (`IDLE`, `BUSY`) and delegates multiply-accumulate operations to the Processing Element (`pe.sv` in `npu/src/`), which maintains a 64-bit signed accumulator (`pe_acc`) operating on Q8.24 fixed-point words. Internal memory arrays (`b`, `w`, `a`) are populated via `$readmemh` from `data/` memory files.
+The top-level NPU module uses a state machine (`IDLE`, `BUSY`) that sequences one output neuron at a time: for each output index `j`, it feeds `IN` input/weight pairs to the Processing Element (`pe.sv` in `npu/src/`), which maintains a 64-bit signed accumulator (`pe_acc`) operating on Q8.24 fixed-point words. After each output, the top level adds the per-output bias `b[j]` and saturates the sum to the signed 32-bit result range before committing it to `result[j]`. Internal memory arrays (`b[OUT]`, `w[IN*OUT]`, `a[IN]`) are populated via `$readmemh` from `data/` memory files.
 
-`npu/tests/tb.sv` instantiates the DUT (`N = 2`), loads `data/bias.mem`, `data/weights.mem`, and `data/activations.mem`, executes multi-sample dot product evaluations, logs trace outputs via `$dumpfile` / `$dumpvars`, and displays formatted Q8.24 results.
+`npu/tests/tb.sv` instantiates the DUT (`IN = 2`, `OUT = 1`), loads `data/bias.mem`, `data/weights.mem`, and `data/activations.mem`, executes four sequential evaluations with reset between them, logs trace outputs via `$dumpfile` / `$dumpvars`, and displays formatted Q8.24 results without automated assertions.
 
 ## Integration Boundary
 
@@ -181,12 +185,14 @@ The Rust export module (`src/export.rs`) converts floating-point weights, biases
 
 | Artifact File | Format | Source Generator | Consumer |
 |---|---|---|---|
-| `npu/weights.mem` | Q8.24 Hex | `export_model()` | Not consumed directly by the current testbench |
-| `npu/bias.mem` | Q8.24 Hex | `export_model()` | Not consumed directly by the current testbench |
-| `npu/activations.mem` | Q8.24 Hex | `export_data()` | Not consumed directly by the current testbench |
-| `npu/target.mem` | Q8.24 Hex | `export_data()` | Not consumed by the current testbench |
+| `npu/data/weights.mem` | Q8.24 Hex | `export_model()` | `$readmemh` into `dut.w` |
+| `npu/data/bias.mem` | Q8.24 Hex | `export_model()` | `$readmemh` into `dut.b` |
+| `npu/data/activations.mem` | Q8.24 Hex | `export_data()` | `$readmemh` into the testbench data array |
+| `npu/data/target.mem` | Q8.24 Hex | `export_data()` | Not loaded by the current testbench |
 
-The testbench instead reads checked-in files under `npu/data/`. The numeric encoding
-is shared, but copying or otherwise connecting the exported artifacts remains manual.
-Full end-to-end topology compilation and bit-exact golden vector assertions are
-project targets recorded in [`../project/ROADMAP.md`](../project/ROADMAP.md).
+Export and simulation now operate on the same files: running the training binary
+overwrites the checked-in memory files consumed by `make sim`. The shared encoding and
+paths do not provide topology or activation information, `target.mem` holds dataset
+labels rather than golden inference outputs, and the testbench performs no bit-exact
+assertions. Topology compilation and golden-vector parity remain project targets
+recorded in [`../project/ROADMAP.md`](../project/ROADMAP.md).

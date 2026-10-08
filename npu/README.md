@@ -7,7 +7,7 @@ prototype and its simulation testbench.
 
 | File / Directory | Purpose |
 |---|---|
-| `src/npu.sv` | Top-level `npu` module with FSM control (`IDLE`, `BUSY`) parameterized by length `N` |
+| `src/npu.sv` | Top-level `npu` module with FSM control (`IDLE`, `BUSY`) parameterized by inputs `IN` and outputs `OUT` |
 | `src/pe.sv` | Processing Element (PE) performing multiply-accumulate with 64-bit accumulator in Q8.24 |
 | `tests/tb.sv` | Testbench with clock generation, reset, memory loading, waveform dumping, and display |
 | `data/activations.mem` | Q8.24 hexadecimal activation words (8 entries for 4 evaluation pairs) |
@@ -18,7 +18,7 @@ prototype and its simulation testbench.
 
 ## Interface and Arithmetic
 
-The testbench instantiates `npu` with parameter `N = 2`. The top-level module coordinates with `pe.sv` using an `init` and `en` handshake over the vector elements. The processing element computes 64-bit products ($Q16.48$) and extracts bits `[55:24]` to accumulate in Q8.24 format. On vector completion, the stored bias (`b[0]`) is added to produce the final `result`.
+The testbench instantiates `npu` with parameters `IN = 2` and `OUT = 1`. The top-level module coordinates with `pe.sv` using an `init` and `en` handshake over the input elements. The processing element computes 64-bit products ($Q16.48$) and arithmetic-shifts right by 24 bits to accumulate in Q8.24 format. On vector completion for each output neuron, the top level adds the per-output bias `b[j]`, saturates the sum to the signed 32-bit Q8.24 range, and commits `result[j]`.
 
 ## Environment
 

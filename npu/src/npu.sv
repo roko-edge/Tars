@@ -20,7 +20,7 @@ module npu #(
   logic signed [31:0] w[IN*OUT];
   logic signed [31:0] a[IN];
 
-  logic unsigned [$clog2(OUT):0] j;
+  logic unsigned [OUT==1?1 : $clog2(OUT)-1:0] j;
   logic unsigned [$clog2(IN):0] i;
 
   logic signed [63:0] pe_acc;

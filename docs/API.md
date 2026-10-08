@@ -13,7 +13,7 @@ maintained under [`engineering/`](engineering/README.md).
 | `Data` | Stores one input vector and one target vector | Dimensions are not validated by the constructor |
 | `Train` | Groups a model, epoch count, learning rate, dataset, and experiment identifier | It is configuration only; it does not execute training |
 | `ExperimentType` | Identifies the OR or XOR configuration in reporting | It does not select or dispatch a factory |
-| `experiments::or::train()` | Creates the built-in OR configuration | Uses random initialization without a configurable seed |
+| `experiments::or::train()` | Creates the built-in OR configuration | Weights and biases initialize to zero; there is no configurable seed |
 | `experiments::xor::train()` | Creates the built-in XOR configuration | The main binary does not select it currently |
 
 See [`EXPERIMENTS.md`](EXPERIMENTS.md) for topologies, datasets, and execution behavior.
@@ -26,7 +26,7 @@ See [`EXPERIMENTS.md`](EXPERIMENTS.md) for topologies, datasets, and execution b
 |---|---|---|
 | `Module` | Forward evaluation over `&[f32]` | The current interface is vector-based, not tensor-based |
 | `Sequential` | Construction, linear layers, ReLU, sigmoid, and forward evaluation | Supports an ordered linear chain only |
-| `Linear` | Construction from explicit parameters or random initialization | Input, weight, and bias dimensions are assumed to be consistent |
+| `Linear` | Construction from explicit parameters, zeros, or random initialization | `Sequential` uses the zeros constructor; dimensions are assumed to be consistent |
 | `Activation` | ReLU and sigmoid evaluation | No additional activation variants are implemented |
 | `AnyModule` | Runtime dispatch over linear and activation modules | Typed accessors panic when used with the wrong variant |
 
@@ -65,9 +65,13 @@ artifact paths. They are not an automated end-to-end pipeline.
 
 ## 5. Experimental Tensor Surface
 
-`Tensor` is public but incomplete. The current implementation provides construction,
-index lookup, mutation under exclusive storage ownership, element count, and a
-contiguity check. Transposition and dot-product operations are not available for use.
+`Tensor` is public but incomplete. The current implementation provides construction
+(including zeros), index lookup, mutation under exclusive storage ownership, element
+count, a contiguity check, zero-copy `transpose` variants, element-wise `add`/`sub`
+with in-place variants, scalar multiply and divide with in-place variants, a
+storage-based `dot_product`, and shape, strides, and offset accessors. Element-wise
+kernels iterate raw storage from the tensor offset and do not respect arbitrary
+strides, and the existing tests do not compile against the current interface.
 
 The complete storage, view, broadcasting, and copy-on-write behavior under
 [`engineering/specs/TENSOR.md`](engineering/specs/TENSOR.md) is a target contract.

@@ -47,14 +47,14 @@ cargo run --bin main
 The current binary:
 
 1. Selects the OR experiment in source; it has no prompt or command-line selector.
-2. Trains for the configured 100,000 epochs with non-deterministic initialization.
+2. Trains for the configured 100,000 epochs starting from zero-initialized weights and biases.
 3. Prints periodic mean squared error values and final floating-point predictions.
-4. Writes Q8.24 artifacts to `npu/weights.mem`, `npu/bias.mem`,
-   `npu/activations.mem`, and `npu/target.mem`.
+4. Writes Q8.24 artifacts to `npu/data/weights.mem`, `npu/data/bias.mem`,
+   `npu/data/activations.mem`, and `npu/data/target.mem`.
 5. Constructs a model graph in memory without saving or rendering it.
 
-The NPU testbench reads different files under `npu/data/`. Running the Rust binary
-does not update the data consumed by `make sim`.
+These are the same files the NPU testbench reads: running the Rust binary
+overwrites the checked-in memory files consumed by `make sim`.
 
 See [`EXPERIMENTS.md`](EXPERIMENTS.md) for the experiment contract and selection
 limitations.
@@ -80,5 +80,6 @@ it does not consume the model trained by `main`. It writes:
 ## 5. Run the Hardware Prototype
 
 Hardware setup, simulation, waveform inspection, and lint commands are documented in
-[`npu/README.md`](../npu/README.md). The current prototype computes a length-two Q8.24
-dot product plus bias and prints results without automatic target assertions.
+[`npu/README.md`](../npu/README.md). The current prototype computes a single affine
+layer (testbench: `IN = 2`, `OUT = 1`) with per-output bias and final signed
+saturation, and prints results without automatic target assertions.

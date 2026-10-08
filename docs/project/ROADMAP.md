@@ -88,24 +88,28 @@ for contract sign-off and verification).
 
 Phases are strictly ordered by dependency, not by calendar. Each phase is completed when its gate condition is met.
 
+Deliverables annotated **[done]** are present in the current repository. The annotation
+records implementation presence only; phase gates remain closed until their verification
+conditions are met and peer reviews are recorded.
+
 ### Phase 1: Contracts and Deterministic Baselines
 
 - **Arthur:**
-  x Sanitize `npu/Makefile`: eliminate broken simulation/ternary targets, wire up automated Verilator linting (`make lint`).
-  x Upgrade `npu/tests/tb.sv` to support `$dumpfile` and `$dumpvars` for GTKWave tracing.
-  - Author normative specifications: `docs/engineering/specs/MODEL_TRAIT.md` and `docs/engineering/specs/ARITHMETIC_Q8_24.md`.
+  - [x] Author normative specifications: `docs/engineering/specs/MODEL_TRAIT.md` and `docs/engineering/specs/ARITHMETIC_Q8_24.md`.
+  - [x] Sanitize `npu/Makefile`: eliminate broken simulation/ternary targets, wire up automated Verilator linting (`make lint`).
+  - [x] Upgrade `npu/tests/tb.sv` to support `$dumpfile` and `$dumpvars` for GTKWave tracing.
 
 - **Gustavo:**
-  x Author normative specification: `docs/engineering/specs/TENSOR.md`.
-  x Implement deterministic pseudo-random number generator (PRNG) with explicit seed support (replacing unseeded uniform randoms).
-  x Implement baseline `cargo test` harness in `src/tests/` for automated Rust regression testing.
-  - Construct baseline characterization tests: capture loss trajectories and canonical weights for OR and XOR models using current engine.
+  - [x] Author normative specification: `docs/engineering/specs/TENSOR.md`.
+  - [ ] Implement deterministic pseudo-random number generator (PRNG) with explicit seed support (replacing unseeded uniform randoms).
+  - [ ] Construct baseline characterization tests: capture loss trajectories and canonical weights for OR and XOR models using current engine.
+  - [ ] Implement baseline `cargo test` harness in `src/tests/` for automated Rust regression testing.
 
 - **Gildo:**
-  - Review `docs/engineering/specs/TENSOR.md` for algorithm suitability.
-  - Implement tensor element-wise arithmetic kernels (`add`, `sub`, `mul`, `div`) respecting strided storage.
-  - Implement memory reduction operations (`sum`, `mean`) along arbitrary axes.
-  - Perform initial peer review of NPU RTL files (`npu/src/npu.sv`, `npu/src/pe.sv`, `npu/tests/tb.sv`, `npu/Makefile`).
+  - [ ] Review `docs/engineering/specs/TENSOR.md` for algorithm suitability.
+  - [ ] Implement tensor element-wise arithmetic kernels (`add`, `sub`, `mul`, `div`) respecting strided storage.
+  - [ ] Implement memory reduction operations (`sum`, `mean`) along arbitrary axes.
+  - [ ] Perform initial peer review of NPU RTL files (`npu/src/npu.sv`, `npu/src/pe.sv`, `npu/tests/tb.sv`, `npu/Makefile`).
 
 **Phase 1 Gate:** All specification documents merged into `main`. Canonical XOR loss curves locked in regression fixtures via `cargo test`. NPU testbench compiles and traces cleanly under Icarus Verilog and passes initial RTL review.
 
@@ -114,23 +118,20 @@ Phases are strictly ordered by dependency, not by calendar. Each phase is comple
 ### Phase 2: Core Abstractions and Hardware Upgrades
 
 - **Gustavo:**
-  . Implement weight initialization algorithms with deterministic seed suport:
-  x Xavier.
-  - Kaiming.
-
-  - Build comprehensive unit test suite in `src/tests/` for tensor storage, shapes, strides, and dimension assertions.
-  - Design benchmark harness for tracking loss curves, training convergence rates, and memory allocations.
-  - Implement dataset loading and batching pipeline for MNIST.
+  - [ ] Implement weight initialization algorithms (Xavier/Glorot, He/Kaiming, and ternary $\{-1, 0, +1\}$ distribution) with deterministic seed support.
+  - [ ] Build comprehensive unit test suite in `src/tests/` for tensor storage, shapes, strides, and dimension assertions.
+  - [ ] Design benchmark harness for tracking loss curves, training convergence rates, and memory allocations.
+  - [ ] Implement dataset loading and batching pipeline for MNIST.
 - **Gildo:**
-  - Deliver zero-copy tensor views (`slice`, `transpose`, `reshape`, `permute`) via strided index projection.
-  - Implement NumPy-compliant multidimensional broadcasting resolution and safe copy-on-write (COW) mutation semantics (`Arc::make_mut`).
-  - Implement cache-friendly row-major matrix multiplication (`matmul`) with dimension assertions.
-  - Review Arthur's NPU microarchitecture updates: audit FSM transitions, 64-bit saturating accumulator arithmetic, and signed ReLU activation logic.
+  - [ ] Deliver zero-copy tensor views (`slice`, `transpose`, `reshape`, `permute`) via strided index projection.
+  - [ ] Implement NumPy-compliant multidimensional broadcasting resolution and safe copy-on-write (COW) mutation semantics (`Arc::make_mut`).
+  - [ ] Implement cache-friendly row-major matrix multiplication (`matmul`) with dimension assertions.
+  - [ ] Review Arthur's NPU microarchitecture updates: audit FSM transitions, 64-bit saturating accumulator arithmetic, and signed ReLU activation logic.
 - **Arthur:**
-  - Refactor `Sequential` to implement the new `Module` trait.
-  - Introduce `Model<M>` container owning parameter lifetime management.
-  - Upgrade NPU microarchitecture: expand accumulator to 64 bits with saturation logic; integrate signed ReLU activation unit in RTL (`npu/src/pe.sv` and `npu/src/npu.sv`).
-  - Maintain hardware testbench in `npu/tests/tb.sv` and supply raw cycle count metrics to Gustavo.
+  - [ ] Refactor `Sequential` to implement the new `Module` trait.
+  - [ ] Introduce `Model<M>` container owning parameter lifetime management.
+  - [x] Upgrade NPU microarchitecture: expand the accumulator to 64 bits with final saturation logic (signed ReLU activation unit remains pending).
+  - [ ] Maintain hardware testbench in `npu/tests/tb.sv` and supply raw cycle count metrics to Gustavo.
 
 **Phase 2 Gate:** Matrix multiplication and tensor views pass automated unit tests (`cargo test`). NPU RTL compiles cleanly under Verilator without warnings and passes Gildo's peer review.
 
@@ -139,18 +140,18 @@ Phases are strictly ordered by dependency, not by calendar. Each phase is comple
 ### Phase 3: Engine Convergence and Tensorized Backpropagation
 
 - **Gildo (Lead) & Arthur (Pair):**
-  - Migrate `Linear` layer to store weights and biases as contiguous `Tensor` instances.
-  - Re-engineer `backward()`: perform full backward pass using batched matrix multiplications, eliminating `Vec<Vec<f32>>` allocations.
-  - Eliminate redundant model cloning in gradient structures (`Grad`).
-  - Review NPU multi-cycle Layer Engine FSM implementation.
+  - [ ] Migrate `Linear` layer to store weights and biases as contiguous `Tensor` instances.
+  - [ ] Re-engineer `backward()`: perform full backward pass using batched matrix multiplications, eliminating `Vec<Vec<f32>>` allocations.
+  - [ ] Eliminate redundant model cloning in gradient structures (`Grad`).
+  - [ ] Review NPU multi-cycle Layer Engine FSM implementation.
 - **Gustavo:**
-  - Execute numerical gradient validation: verify analytical tensor backprop against finite differences (`num_grad`) with tolerance $\epsilon \le 10^{-4}$.
-  - Conduct quantitative analysis of quantization error ($f32 \to \text{Q8.24}$) and saturation effects.
-  - Run benchmark suite on XOR and multi-layer configurations; log performance metrics, convergence curves, and memory profiles into `docs/project/research/`.
+  - [ ] Execute numerical gradient validation: verify analytical tensor backprop against finite differences (`num_grad`) with tolerance $\epsilon \le 10^{-4}$.
+  - [ ] Conduct quantitative analysis of quantization error ($f32 \to \text{Q8.24}$) and saturation effects.
+  - [ ] Run benchmark suite on XOR and multi-layer configurations; log performance metrics, convergence curves, and memory profiles into `docs/project/research/`.
 - **Arthur:**
-  - Design multi-cycle Layer Engine FSM in `npu/src/npu.sv` capable of computing $M$ output neurons from $N$ input activations sequentially.
-  - Implement `Model::compile_to_manifest()` exporting layer descriptors and Q8.24 weights.
-  - Maintain hardware simulation suite and deliver cycle timing data to Gustavo.
+  - [x] Design multi-cycle Layer Engine FSM in `npu/src/npu.sv` for sequential computation of $M$ output neurons from $N$ inputs (multi-layer chaining and activation units remain pending).
+  - [ ] Implement `Model::compile_to_manifest()` exporting layer descriptors and Q8.24 weights.
+  - [ ] Maintain hardware simulation suite and deliver cycle timing data to Gustavo.
 
 **Phase 3 Gate:** Training loop converges on XOR using pure `Tensor` backend. Numerical gradient check passes ($\epsilon \le 10^{-4}$). NPU Layer Engine FSM passes simulation and Gildo's RTL review.
 
@@ -159,16 +160,16 @@ Phases are strictly ordered by dependency, not by calendar. Each phase is comple
 ### Phase 4: Integrated System Verification
 
 - **Arthur (Lead) & Gildo (RTL Reviewer):**
-  - Export trained XOR model from Rust runtime into unified `.mem` format with manifest.
-  - Implement self-checking testbench in `npu/tests/tb.sv`: reads input activations, computes hardware output, and asserts equivalence against exported golden vectors with non-zero exit codes on failure.
-  - Document bit-exact parity proof across all 4 XOR input combinations.
+  - [ ] Export trained XOR model from Rust runtime into unified `.mem` format with manifest.
+  - [ ] Implement self-checking testbench in `npu/tests/tb.sv`: reads input activations, computes hardware output, and asserts equivalence against exported golden vectors with non-zero exit codes on failure.
+  - [ ] Document bit-exact parity proof across all 4 XOR input combinations.
 - **Gustavo:**
-  - Lead final evaluation, benchmark reporting, and scientific analysis for the v0.1.0 release.
-  - Consolidate software accuracy (MNIST $\ge 95\%$), hardware cycle latency, and quantization loss metrics into `docs/project/research/`.
-  - Validate end-to-end regression fixtures ensuring bit-exact alignment between software Q8.24 inference and RTL simulation.
+  - [ ] Lead final evaluation, benchmark reporting, and scientific analysis for the v0.1.0 release.
+  - [ ] Consolidate software accuracy (MNIST $\ge 95\%$), hardware cycle latency, and quantization loss metrics into `docs/project/research/`.
+  - [ ] Validate end-to-end regression fixtures ensuring bit-exact alignment between software Q8.24 inference and RTL simulation.
 - **Gildo:**
-  - Deprecate and remove legacy vector math code paths.
-  - Audit finalized NPU testbench results and sign off on RTL hardware verification.
+  - [ ] Deprecate and remove legacy vector math code paths.
+  - [ ] Audit finalized NPU testbench results and sign off on RTL hardware verification.
 
 **Phase 4 Gate:** End-to-end demonstration: Rust train ──► Export ──► NPU simulation PASS with zero bit mismatches. Full benchmark report and research logs consolidated in `docs/project/research/`.
 

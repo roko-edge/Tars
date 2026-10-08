@@ -25,5 +25,7 @@ repository.
 
 - Rust sources and the SystemVerilog prototype have independent build commands.
 - There is no automated integration or parity test between them.
-- Rust exports memory files under `npu/`, while the testbench consumes files under
-  `npu/data/`; this path mismatch must be resolved before a shared pipeline exists.
+- Rust export and the testbench operate on the same files under `npu/data/`: a
+  training run overwrites the memory files consumed by simulation. The remaining gap
+  toward a shared pipeline is the absence of topology export and automated parity
+  assertions.

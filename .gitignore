@@ -3,7 +3,7 @@ build/
 .direnv/
 .omo/
 ./npu/data/*.mem
-
+./npu/.nvim/svlangserver/
 src/view/artifacts/*
 
 # Added by cargo

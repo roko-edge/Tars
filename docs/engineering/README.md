@@ -12,7 +12,7 @@ not establish that a planned capability is available.
 |---|---|---|
 | Understand the current repository structure | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Current implementation record |
 | Review implemented architectural decisions | [`DECISIONS.md`](DECISIONS.md) | Implemented decisions only |
-| Inspect the Rust-to-RTL artifact format | [`MEM_FORMAT.md`](MEM_FORMAT.md) | Current format with disconnected paths |
+| Inspect the Rust-to-RTL artifact format | [`MEM_FORMAT.md`](MEM_FORMAT.md) | Current format with shared `npu/data/` paths |
 | Evaluate the observability design | [`OBSERVABILITY_PROPOSAL.md`](OBSERVABILITY_PROPOSAL.md) | Proposal, not implemented |
 | Review normative and target contracts | [`specs/README.md`](specs/README.md) | Mixed current and target contracts with explicit status |
 

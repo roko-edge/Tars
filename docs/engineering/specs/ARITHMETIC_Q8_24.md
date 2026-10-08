@@ -85,9 +85,18 @@ $$\text{acc}_{32} = \begin{cases}
 
 ### 3.3 Current Deviation (Normative Warning)
 
-The current processing element maintains a 64-bit accumulator. The top-level result
-is reduced to 32 bits without explicit signed saturation. Saturating reduction remains
-a target recorded in [`docs/project/ROADMAP.md`](../../project/ROADMAP.md).
+The current processing element maintains a 64-bit accumulator, and the top-level module
+applies explicit signed saturation to the 32-bit result after adding the per-output
+bias, satisfying the saturation requirement of Section 3.2. Two deviations from the
+target arithmetic remain:
+
+1. The per-product reduction in `pe.sv` accumulates the full 64-bit arithmetic-shifted
+   product (`raw_mult >>> 24`) instead of the 32-bit slice of Section 3.1. The
+   arithmetic shift floors toward negative infinity, so the Rust golden model must
+   reproduce these exact semantics for bit-exact parity.
+2. The exported `target.mem` currently contains dataset labels rather than golden
+   Q8.24 inference outputs, and the testbench implements no assertion; the parity
+   protocol of Section 4 remains unimplemented.
 
 ---
 

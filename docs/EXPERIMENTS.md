@@ -34,9 +34,8 @@ public modules.
 | `experiment_type` | `ExperimentType` | Identifier printed when the run starts |
 
 Each experiment exposes `pub fn train() -> Train`. Calling it constructs a fresh
-model and dataset; it does not execute training. Linear layers initialize weights
-randomly in `[-1, 1)` and biases to zero. There is no configured random seed, so
-predictions and loss may vary between runs.
+model and dataset; it does not execute training. Linear layers initialize weights and
+biases to zero through `Linear::zeros`.
 
 `ExperimentType` is a Rust enum deriving `Debug` and `Clone`, with variants `Or` and
 `Xor`. It identifies the configuration for logging. It does not select a factory,
@@ -117,9 +116,9 @@ Training runs for the configured epoch count without early stopping.
 ## Exports and constraints
 
 Calls to `export_model` and `export_data` are active in `main`. A normal run from the
-repository root overwrites `npu/weights.mem`, `npu/bias.mem`,
-`npu/activations.mem`, and `npu/target.mem`. These files are not consumed directly
-by the current testbench, which reads checked-in artifacts from `npu/data/`.
+repository root overwrites `npu/data/weights.mem`, `npu/data/bias.mem`,
+`npu/data/activations.mem`, and `npu/data/target.mem`. These are the same files the
+NPU testbench reads when running `make sim`.
 
 Configurations must provide a nonempty dataset because graph extraction accesses
 `train.dataset[0]`. Inputs, targets, and layer dimensions must be consistent; the
