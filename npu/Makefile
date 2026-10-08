@@ -10,20 +10,27 @@ BUILD_DIR = build
 SRC = src/pe.sv src/npu.sv
 TB  = tests/tb.sv
 
-.PHONY: all sim test wave lint clean
+.PHONY: all sim run test wave lint clean
 
 all: test
 
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-sim: $(BUILD_DIR)
+# 1. Compila o binário C++ APENAS se algum arquivo .sv foi modificado
+$(BUILD_DIR)/npu_sim: $(SRC) $(TB) | $(BUILD_DIR)
 	@$(RUN) verilator --binary --timing --trace \
 		--quiet --quiet-build --quiet-stats \
 		-Wno-fatal -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD \
 		$(SRC) $(TB) --top-module tb \
-		-o npu_sim --Mdir $(BUILD_DIR)
+		-o npu_sim -Mdir $(BUILD_DIR)
+
+# 2. Executa a simulação (recompila se necessário, ou roda instantaneamente)
+sim: $(BUILD_DIR)/npu_sim
 	@$(RUN) ./$(BUILD_DIR)/npu_sim +verilator+quiet
+
+# Alias prático para execução
+run: sim
 
 test: sim
 
