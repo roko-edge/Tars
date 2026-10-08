@@ -6,10 +6,16 @@ module npu #(
     input logic clk,
     input logic rst,
     input logic start,
+    input logic [1:0] activation,
     output logic done,
     output logic signed [31:0] result[OUT]
 
 );
+  typedef enum logic [1:0] {
+    RELU = 1,
+    SIGMOID = 2
+  } activation_t;
+
   typedef enum logic {
     IDLE = 0,
     BUSY = 1
@@ -47,7 +53,15 @@ module npu #(
       sum32 = sum64[63] ? 32'sh8000_0000 : 32'sh7FFF_FFFF;
     end
   end
-
+  logic signed [31:0] act_out;
+  always_comb begin
+    unique case (activation)
+      RELU: begin
+        act_out = sum32[31] ? 0 : sum32;
+      end
+      default: act_out = sum32;
+    endcase
+  end
   always_ff @(posedge clk or posedge rst) begin
     if (rst) begin
       j <= 0;
@@ -70,7 +84,7 @@ module npu #(
         BUSY: begin
           if (32'(i) == IN) begin
 
-            result[j] <= sum32;
+            result[j] <= act_out;
             i <= 0;
             if (32'(j) == OUT - 1) begin
               state <= IDLE;

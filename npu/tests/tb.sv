@@ -14,9 +14,15 @@ module tb;
       .clk(clk),
       .rst(rst),
       .start(start),
+      .activation(1),
       .done(done),
       .result(result)
   );
+
+  function automatic real to_float(input logic signed [31:0] q8_24);
+    return $itor(q8_24) / 16777216.0;
+  endfunction
+
 
   always #5 clk = ~clk;
   logic signed [31:0] data[8];
@@ -31,7 +37,7 @@ module tb;
     $readmemh("data/weights.mem", dut.w);
     $readmemh("data/activations.mem", data);
 
-
+    $display("\n");
 
     for (int s = 0; s < 4; ++s) begin
       rst   = 1;
@@ -46,7 +52,8 @@ module tb;
       #10;
       start = 0;
       wait (done);
-      $display("Entries:%d %d the result is %d\n", data[s*2], data[s*2+1], result[0]);
+      $display("Entries: %0.6f %0.6f the result is %0.6f\n", to_float(data[s*2]), to_float(
+               data[s*2+1]), to_float(result[0]));
     end
 
     $finish;
