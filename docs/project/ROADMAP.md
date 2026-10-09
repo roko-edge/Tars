@@ -101,9 +101,9 @@ conditions are met and peer reviews are recorded.
 
 - **Gustavo:**
   - [x] Author normative specification: `docs/engineering/specs/TENSOR.md`.
-  - [ ] Implement deterministic pseudo-random number generator (PRNG) with explicit seed support (replacing unseeded uniform randoms).
-  - [ ] Construct baseline characterization tests: capture loss trajectories and canonical weights for OR and XOR models using current engine.
-  - [ ] Implement baseline `cargo test` harness in `src/tests/` for automated Rust regression testing.
+  - [x] Implement deterministic pseudo-random number generator (PRNG) with explicit seed support (replacing unseeded uniform randoms).
+  - [x] Construct baseline characterization tests: capture loss trajectories and canonical weights for OR and XOR models using current engine.
+  - [x] Implement baseline `cargo test` harness in `src/tests/` for automated Rust regression testing.
 
 - **Gildo:**
   - [ ] Review `docs/engineering/specs/TENSOR.md` for algorithm suitability.
