@@ -8,6 +8,13 @@ pub struct Tensor {
     offset: usize,
 }
 
+// This enum defines all types that a tensor can store. functions that implemments a tensor operator should override each operator based on the type you're working with.
+
+pub enum TensorTypes {
+    FLOAT,
+    TERNARY,
+}
+
 impl Tensor {
     fn contiguous_strides(shape: &[usize]) -> Vec<usize> {
         let mut strides = vec![0; shape.len()];
