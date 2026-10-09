@@ -1,4 +1,5 @@
 pub mod tensor;
+use rand::{RngExt, random};
 pub use tensor::*;
 
 pub fn random_vec(len: usize) -> Vec<f32> {
@@ -26,6 +27,29 @@ pub fn prng(low: f32, high: f32) -> f32 {
 
 pub fn xavier(n: usize) -> Vec<f32> {
     (0..n).map(|_| prng(0.0, 1.0) / (n as f32).sqrt()).collect()
+}
+
+// NOTE:
+// This function returns a random number between from the discrete interval [-1, 0, 1]
+// By standard, this strategy generates a distribution with with mean 0 and variance = 2/3.
+// The mean is ok, but we need a variance = 1. To fix that, we use the fact that var(a*x) = a^2 *
+// var(x). => c^2*(2/3) = 1 => c = sqrt(3/2). It means that we should multi the rng by the factor
+// a = sqrt(3/2)
+
+// Basis used rn: (Consider sqrt() as s())
+// {-s(3/2), 0, s(3, 2)}
+
+pub fn ternary_rng() -> f32 {
+    let mut rng = rand::rng();
+    let u = rng.random_range(0..3);
+
+    let scale = (3.0_f32 / 2.0).sqrt();
+
+    match u {
+        0 => -scale,
+        1 => 0.0,
+        _ => scale,
+    }
 }
 
 pub fn random_mat(lenx: usize, leny: usize) -> Vec<Vec<f32>> {
