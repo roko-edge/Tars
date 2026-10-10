@@ -13,6 +13,7 @@ not establish that a planned capability is available.
 | Understand the current repository structure | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Current implementation record |
 | Review implemented architectural decisions | [`DECISIONS.md`](DECISIONS.md) | Implemented decisions only |
 | Inspect the Rust-to-RTL artifact format | [`MEM_FORMAT.md`](MEM_FORMAT.md) | Current format with shared `npu/data/` paths |
+| Review board integration and synthesis architecture | [`BOARD_INTEGRATION.md`](BOARD_INTEGRATION.md) | Board integration architecture and local lab specification |
 | Evaluate the observability design | [`OBSERVABILITY_PROPOSAL.md`](OBSERVABILITY_PROPOSAL.md) | Proposal, not implemented |
 | Review normative and target contracts | [`specs/README.md`](specs/README.md) | Mixed current and target contracts with explicit status |
 
@@ -24,7 +25,7 @@ not establish that a planned capability is available.
 |---|---|
 | Rust model architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md), [`specs/MODEL_TRAIT.md`](specs/MODEL_TRAIT.md) |
 | Tensor engine | [`specs/TENSOR.md`](specs/TENSOR.md) |
-| NPU arithmetic and integration | [`MEM_FORMAT.md`](MEM_FORMAT.md), [`specs/ARITHMETIC_Q8_24.md`](specs/ARITHMETIC_Q8_24.md) |
+| NPU arithmetic and integration | [`MEM_FORMAT.md`](MEM_FORMAT.md), [`specs/ARITHMETIC_Q8_24.md`](specs/ARITHMETIC_Q8_24.md), [`BOARD_INTEGRATION.md`](BOARD_INTEGRATION.md) |
 | Visualization and telemetry | [`OBSERVABILITY_PROPOSAL.md`](OBSERVABILITY_PROPOSAL.md) |
 
 Current project progress and scheduling belong in

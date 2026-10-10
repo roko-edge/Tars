@@ -1,11 +1,25 @@
+# Rust / Cargo
+/target
+
+# Build Artifacts & Environment Caches
 build/
 .cache/
 .direnv/
 .omo/
-./npu/data/*.mem
-./npu/.nvim/svlangserver/
 src/view/artifacts/*
+.nvim/
 
-# Added by cargo
+# Hardware Synthesis (Vivado / EDA Tools)
+build_vivado/
+.Xil/
+*.jou
+*.log
+*.pb
+*.str
 
-/target
+# NPU Generated Memory Files
+./npu/data/*.mem
+
+# Local FPGA Synthesis Laboratory (git-ignored)
+synthesis/
+

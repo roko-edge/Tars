@@ -1,81 +1,71 @@
-# AGENTS.md — Política de Agentes e IA neste Repositório
+# AGENTS.md - AI Agent Policy
 
-## 1. Regra Inviolável (Propriedade Humana do Código)
+## 1. Scope and Human Ownership
 
-**Qualquer e todo agente (ou modelo de IA) neste repositório NÃO PODE encostar no código.**
+Git-tracked files are maintained exclusively by humans.
+AI agents may read them, but must not modify, delete, rename,
+overwrite, or change their permissions.
 
-Isso significa que nenhum agente pode:
+This restriction applies to all tracked files, including source code,
+configuration, scripts, tests, documentation, and this policy.
 
-- Criar, editar, renomear ou deletar **qualquer arquivo de código-fonte** (`.rs`, `.sv`, `.c`, `.cpp`, `.h`), incluindo `main.rs` ou `main.sv`;
-- Modificar arquivos de build ou configuração do projeto (`Cargo.toml`, `Makefile`, `flake.nix`, `.gitignore`);
-- Aplicar refatorações, "correções", formatação automática ou reescritas de código, **mesmo que detecte bugs, warnings ou más práticas**;
-- Gerar patches, commits ou pull requests que alterem código;
-- Alterar o AGENTS.md.
+## 2. File Classification
 
----
+A path is protected if it is tracked in the Git index or exists in
+the current HEAD commit. Newly staged files are also protected.
 
-## 2. O que um Agente PODE Fazer
+Files already protected at the start of a task remain protected
+throughout that task, even if their Git status changes.
 
-- **Ler** todo o repositório livremente (código, build, histórico, issues);
-- **Escrever e editar apenas documentação** (`.md`, `.txt` em `docs/ e seus subdiretorios`) — e somente quando o mantenedor pedir explicitamente;
-- Trabalhar **sempre em uma branch separada** (ex.: `docs/*`), para que o mantenedor revise e aprove antes de qualquer merge;
-- Reportar problemas encontrados no código **por escrito** (issue, relatório, comentário em revisão), sem corrigi-los por conta própria.
+Untracked files, including Git-ignored files, may be created or edited
+only when the maintainer explicitly requests the specific work.
 
----
+Agents must verify Git tracking status before making any change.
+If classification is uncertain, they must stop and ask the maintainer.
 
-## 3. Diretrizes Estritas de Estilo da Documentação
+## 3. Permitted and Prohibited Actions
 
-Ao criar ou modificar arquivos em `docs/`, os agentes devem obrigatoriamente seguir estas regras:
+Agents may inspect the repository and report findings without editing
+protected files.
 
-1. **Proibido Código de Implementação (Zero Copy-Paste Code):**
-   - Nunca incluir corpos completos de funções/métodos (`impl`, laços `for`, algoritmos prontos) dentro dos arquivos Markdown.
-   - Incluir apenas assinaturas abstratas de traits, definições estruturais de tipos, equações matemáticas e diagramas conceituais.
-   - O papel da documentação é especificar **o que** deve ser feito, **por que** e **quais os contratos**, deixando a escrita do código exclusivamente para os humanos.
+Agents must not untrack files, alter ignore rules, or use symlinks,
+alternate paths, generators, or build commands to bypass protection.
 
-2. **Linguagem Técnica Sobria (Sem Emojis ou Fluff):**
-   - Manter o tom formal, direto e acadêmico/de engenharia em inglês ou português.
-   - **Proibido usar emojis**, saudações informais, elogios ou frases conversacionais de modelos de linguagem.
-   - Manter tabelas claras de navegação e formatação matemática padrão em LaTeX ($\mathcal{L}$, $W_{ij}$).
+Every operation must respect the protection of its actual targets,
+including indirect writes and generated output.
 
-3. **Hierarquia Concisa e Pontos de Entrada:**
-   - Cada diretório de documentação deve ter um arquivo `README.md` atuando como ponto de entrada com navegação por tarefa e por integrante do time.
-   - Evitar proliferação de arquivos fragmentados; agrupar especificações relacionadas em documentos normativos diretos.
+Untracked status does not authorize unrelated changes, access to
+secrets, or modification of system configuration.
 
----
+Hardware programming, privileged changes, and external side effects
+require explicit maintainer authorization.
 
-## 4. Mensagens de Commit (Autoria Humana do Histórico)
+## 4. Git and Commit Authorship
 
-**Commit messages são escritas pelo autor humano da mudança.**
-Agentes de IA não devem gerar mensagens de commit finais para substituição da reflexão do autor; podem, no máximo, revisar ortografia ou gramática a pedido explícito do mantenedor. O histórico de commits é o registro permanente da intenção humana e da tomada de decisão dos membros do projeto.
+Agents must not stage files, create commits, or publish changes.
+Commit messages are written by the human author.
+Agents may review spelling or grammar only upon explicit request.
 
----
+## 5. Documentation Standards
 
-## 5. Propriedade do Código
+Any authorized documentation changes must use a formal technical tone,
+without emojis, greetings, praise, or conversational filler.
 
-Todo o código de `tars-ml` é escrito **exclusivamente por humanos**.
-Agentes de IA são ferramentas de consulta, pesquisa e documentação — nunca autores ou editores do código.
+Documentation must specify purpose, contracts, architecture, and
+rationale, without complete implementation bodies or ready-made algorithms.
 
-Se um agente precisa apontar um problema, o fluxo é:
+Each documentation directory must provide a README.md entry point.
+Prefer consolidated specifications over fragmented documents.
 
-1. Documentar o problema (o quê, onde, por quê);
-2. Aguardar o humano corrigir manualmente;
-3. Nunca "adiantar" a correção.
+## 6. Documentation Organization
 
-## 6. padrão de documentação
+- docs/: user documentation for implemented library features.
+- docs/engineering/: architecture, contracts, and technical proposals.
+- docs/project/: planning, status, research, and communication.
 
-1. O diretório docs/ está dividido em três pontos de acesso:
+These conventions do not override Git-tracked file protection.
 
-    docs/
-        Documentação direcionada ao usuário — ensina a usar os recursos implementados na biblioteca.
+## 7. Local Instructions
 
-    docs/engineering/
-        Registro de arquitetura, contratos e propostas técnicas internas.
-
-    docs/project/
-        Registra planejamento, status, pesquisa e comunicação.
-
-    A regra é que agentes, ao escreverem documentação, devem seguir essa divisão à risca.
-
----
-
-*Esta política é deliberada: `tars-ml` é uma biblioteca de machine learning construída do zero com propósito educacional/de pesquisa. O valor do projeto está no aprendizado humano profundo — o código deve refletir decisão humana em cada linha.*
+Nested AGENTS.md files may impose additional restrictions.
+They must not relax the protection of Git-tracked files.
