@@ -1,5 +1,5 @@
 pub mod tensor;
-use rand::{RngExt, random};
+use rand::RngExt;
 pub use tensor::*;
 
 pub fn random_vec(len: usize) -> Vec<f32> {
@@ -23,7 +23,7 @@ pub fn prng(low: f32, high: f32) -> f32 {
 // This function returns a vector of n random variables variables as (prng(0, 1) / sqrt(n))
 // This is nescessary beacuse variance has this prop: var(aX) = a^2var(x)
 // => var(X/sqrt(n)) = 1/x * var(X) => var(1/x * var(X)) = 1/n
-// The variance of this whole expression should be 1/n according to Xavier Glorot - check [https://arxiv.org/abs/1704.08863]
+// The variance of this whole expression should be 1/n according to Xavier Glorot - check [https://www.researchgate.net/publication/215616968_Understanding_the_difficulty_of_training_deep_feedforward_neural_networks]
 
 pub fn xavier(n: usize) -> Vec<f32> {
     (0..n).map(|_| prng(0.0, 1.0) / (n as f32).sqrt()).collect()

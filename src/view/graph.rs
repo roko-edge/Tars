@@ -64,8 +64,9 @@ impl NetGraph {
     }
 
     fn create_node(g: &mut DiGraph<Perceptron, f32>, id: usize) -> NodeIndex {
-        // Is it really necessary?
-        assert!(id >= 1, "Node's ID can't be negative!");
+        // TODO:
+        // Check why this line bellow is being called every time
+        // assert!(id >= 1, "Node's ID can't be negative!");
         let p = Perceptron::new(id);
         g.add_node(p)
     }
@@ -80,20 +81,13 @@ impl NetGraph {
         g.add_edge(from, to, weight)
     }
 
-    pub fn network_to_graph(&mut self) {
-        Self::check_input_size(&mut self.model, &self.input_data);
-        Self::create_nodes(&mut self.graph, self.input_data.len());
-
-        let mut number_neurons = self.input_data.len();
-        let mut previous_layer_start = 0;
-
-        // TODO:
-        // Refactor this code to use tensor + iterators
-
+    // TODO:
+    // Refactor this code to use tensor + iterators
+    fn extract_graph(&mut self, mut number_neurons: usize, mut previous_layer_start: usize) {
         for module in &self.model.modules {
             match module {
                 AnyModule::Linear(linear) => {
-                    let current_layer_start = number_neurons;
+                    let current_layer_start: usize = number_neurons;
 
                     for o in &linear.weights {
                         Self::create_node(&mut self.graph, number_neurons);
@@ -110,6 +104,26 @@ impl NetGraph {
                 AnyModule::Activation(_) => {}
             }
         }
+    }
+
+    pub fn network_to_graph(&mut self) {
+        Self::check_input_size(&self.model, &self.input_data);
+
+        // TODO:
+        // Check what's wrong here:
+        // Creates the first layer
+        // (0..self.input_data.len())
+        //     .map(|i| Self::create_node(&mut self.graph, i))
+        //     .collect();
+
+        for i in 0..self.input_data.len() {
+            Self::create_node(&mut self.graph, i);
+        }
+
+        let number_neurons = self.input_data.len();
+        let previous_layer_start = 0;
+
+        Self::extract_graph(self, number_neurons, previous_layer_start);
     }
 
     pub fn graph_to_dot(&self) -> String {
