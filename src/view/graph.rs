@@ -1,5 +1,4 @@
 use crate::AnyModule;
-use crate::math::*;
 use crate::sequential::Sequential;
 use core::fmt;
 use petgraph::dot::Config;
@@ -39,39 +38,70 @@ impl fmt::Display for Perceptron {
 #[derive(Clone, Debug)]
 pub struct NetGraph {
     graph: DiGraph<Perceptron, f32>,
+    model: Sequential,
+    input_data: Vec<f32>,
     indices: Vec<NodeIndex>,
 }
 
 impl NetGraph {
-    pub fn new() -> Self {
+    pub fn new(model: Sequential, input_data: &[f32]) -> Self {
         Self {
             graph: DiGraph::new(),
+            model: model.clone(),
+            input_data: input_data.to_vec(),
             indices: Vec::new(),
         }
     }
 
-    pub fn network_to_graph(&mut self, model: &Sequential, input: &[f32]) {
+    // TODO:
+    // This fn should return a error instead of Panic.
+    fn check_input_size(model: &Sequential, input: &[f32]) {
         assert_eq!(model.modules[0].as_linear().in_sz, input.len());
+    }
 
-        for i in 0..input.len() {
-            self.add_node(Perceptron::new(i));
-        }
+    fn create_nodes(g: &mut DiGraph<Perceptron, f32>, n: usize) -> Vec<NodeIndex> {
+        (0..n).map(|i| g.add_node(Perceptron::new(i))).collect()
+    }
 
-        let mut number_neurons = input.len();
+    fn create_node(g: &mut DiGraph<Perceptron, f32>, id: usize) -> NodeIndex {
+        // Is it really necessary?
+        assert!(id >= 1, "Node's ID can't be negative!");
+        let p = Perceptron::new(id);
+        g.add_node(p)
+    }
+
+    fn create_edge(
+        g: &mut DiGraph<Perceptron, f32>,
+        from: NodeIndex,
+        to: NodeIndex,
+        weight: f32,
+    ) -> EdgeIndex {
+        assert!(from < to, "This should be a digraph");
+        g.add_edge(from, to, weight)
+    }
+
+    pub fn network_to_graph(&mut self) {
+        Self::check_input_size(&mut self.model, &self.input_data);
+        Self::create_nodes(&mut self.graph, self.input_data.len());
+
+        let mut number_neurons = self.input_data.len();
         let mut previous_layer_start = 0;
 
-        for module in &model.modules {
+        // TODO:
+        // Refactor this code to use tensor + iterators
+
+        for module in &self.model.modules {
             match module {
                 AnyModule::Linear(linear) => {
                     let current_layer_start = number_neurons;
 
                     for o in &linear.weights {
-                        let p = Perceptron::new(number_neurons);
-                        self.add_node(p);
+                        Self::create_node(&mut self.graph, number_neurons);
 
-                        // FIX: w shouldn't be nammed like that
                         for (w, &weight) in o.iter().enumerate() {
-                            self.add_edge(previous_layer_start + w, number_neurons, weight);
+                            let from_idx = NodeIndex::new(previous_layer_start + w);
+                            let to_idx = NodeIndex::new(number_neurons);
+                            Self::create_edge(&mut self.graph, from_idx, to_idx, weight);
                         }
                         number_neurons += 1;
                     }
