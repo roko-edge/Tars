@@ -24,19 +24,17 @@ fn main() -> Result<()> {
         .linear(2)
         .relu();
 
-    let input = vec![1.0, 0.676767, 1.0, 2.0];
-
-    let mut net = NetGraph::new();
-
-    net.network_to_graph(&model, &input);
-
     let source = "src/view/artifacts/graph.dot";
     let destiny = "src/view/artifacts/network.png";
 
+    let input = vec![1.0, 0.676767, 1.0, 2.0];
+
+    let mut net = NetGraph::new(model, &input);
+    net.network_to_graph();
     net.graph_to_dot();
     net.save_dot(source)?;
     net.export_dot(source, destiny);
-
     net.plot();
+
     Ok(())
 }
