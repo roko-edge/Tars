@@ -2,16 +2,13 @@ use std::io::Result;
 use tars::sequential::*;
 use tars::view::graph::*;
 
-// TODO Create a module to dot to png handler
-// TODO Move dot compilation flags to a separate structure
-
-/*
-Proposed design:
- *Input       Hidden        Output x0          h1_0          y0
-  x1          h1_1          y1
-  x2          h1_2
-  x3          h1_3
- */
+// TODO:
+// Create a module to dot to png handler;
+// Move dot compilation flags to a separate structure;
+// Should the user be able to work with raw .dot for graph visualization?
+// Hyprparams and Visualization config should be passed to a .yaml file - Ex: output format (svg/png, etc), source and
+// destiny path.
+// There should be a csv to raw data extractor or is it overbloated?
 
 fn main() -> Result<()> {
     let model = Sequential::new(4)
@@ -24,16 +21,14 @@ fn main() -> Result<()> {
         .linear(2)
         .relu();
 
-    let source = "src/view/artifacts/graph.dot";
-    let destiny = "src/view/artifacts/network.png";
-
     let input = vec![1.0, 0.676767, 1.0, 2.0];
 
     let mut net = NetGraph::new(model, &input);
+
+    // generates a raw .dot file with network topology
     net.network_to_graph();
-    net.graph_to_dot();
-    net.save_dot(source)?;
-    net.export_dot(source, destiny);
+
+    // export .dot to .svg
     net.plot();
 
     Ok(())

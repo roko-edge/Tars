@@ -1,20 +1,22 @@
 use core::panic;
 use std::sync::Arc;
 
+#[derive(Debug)]
+pub enum DType {
+    F32(f32),
+    T3,
+    I8(i8),
+}
+
 #[derive(Debug, Clone)]
 pub struct Tensor {
-    storage: Arc<Vec<f32>>,
+    storage: Arc<Vec<DType>>,
     shape: Vec<usize>,
     strides: Vec<usize>,
     offset: usize,
 }
 
 // This enum defines all types that a tensor can store. functions that implemments a tensor operator should override each operator based on the type you're working with.
-
-pub enum TensorTypes {
-    FLOAT,
-    TERNARY,
-}
 
 impl Tensor {
     fn contiguous_strides(shape: &[usize]) -> Vec<usize> {
@@ -333,8 +335,12 @@ impl Tensor {
             new_tensor.storage[i] = f(self.get(i));
         }
 
+        for i in self.storage() {}
+
         new_tensor
     }
 
-    fn map_mut(&mut self, f: fn(f32) -> f32) {}
+    fn map_mut(&mut self, f: fn(f32) -> f32) {
+        todo!("Ain't done yet!");
+    }
 }

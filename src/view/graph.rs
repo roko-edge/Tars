@@ -10,6 +10,9 @@ use std::fs;
 use std::io::Result;
 use std::process::Command;
 
+// TODO:
+// Split this module into dot operations and graph extract.
+
 #[derive(Clone, Debug)]
 pub struct Perceptron {
     id: usize,
@@ -106,8 +109,11 @@ impl NetGraph {
         }
     }
 
-    pub fn network_to_graph(&mut self) {
+    pub fn network_to_graph(&mut self) -> Result<()> {
         Self::check_input_size(&self.model, &self.input_data);
+
+        let source = "src/view/artifacts/graph.dot";
+        let destiny = "src/view/artifacts/network.png";
 
         // TODO:
         // Check what's wrong here:
@@ -124,6 +130,12 @@ impl NetGraph {
         let previous_layer_start = 0;
 
         Self::extract_graph(self, number_neurons, previous_layer_start);
+        Self::graph_to_dot(&self);
+
+        Self::save_dot(&self, source)?;
+        Self::export_dot(&self, source, destiny);
+
+        OK(())
     }
 
     pub fn graph_to_dot(&self) -> String {
@@ -149,6 +161,8 @@ impl NetGraph {
         fs::write(path, dot)
     }
 
+    // TODO:
+    // Should read this from a .yaml file
     pub fn export_dot(&self, source_path: &str, destiny_path: &str) {
         let out = Command::new("dot")
             .arg(source_path)
@@ -190,8 +204,6 @@ impl NetGraph {
         let idx = self.graph.add_node(p);
         self.indices.push(idx);
     }
-
-    // use Dot::with_attr_getters to set edge color
 
     pub fn add_edge(&mut self, from: usize, to: usize, w: f32) {
         let from_idx = self.indices[from];
