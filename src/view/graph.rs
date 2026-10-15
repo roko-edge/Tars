@@ -135,7 +135,7 @@ impl NetGraph {
         Self::save_dot(&self, source)?;
         Self::export_dot(&self, source, destiny);
 
-        OK(())
+        Ok(())
     }
 
     pub fn graph_to_dot(&self) -> String {
