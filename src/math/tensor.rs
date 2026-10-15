@@ -8,6 +8,7 @@ pub enum DType {
     T3,
 }
 
+#[derive(Debug, Clone)]
 pub enum Storage {
     F32(Arc<Vec<f32>>),
     I8 { data: Arc<Vec<i8>>, scale: f32 },
