@@ -1,14 +1,10 @@
 use crate::AnyModule;
 use crate::sequential::Sequential;
 use core::fmt;
-use petgraph::dot::Config;
-use petgraph::dot::Dot;
-use petgraph::graph::DiGraph;
 use petgraph::prelude::*;
 use std::fmt::Debug;
-use std::fs;
 use std::io::Result;
-use std::process::Command;
+mod dot;
 
 // TODO:
 // Split this module into dot operations and graph extract.
@@ -132,68 +128,6 @@ impl NetGraph {
         Self::export_dot(self, source, destiny);
 
         Ok(())
-    }
-
-    pub fn graph_to_dot(&self) -> String {
-        let dot = Dot::with_attr_getters(
-            &self.graph,
-            &[Config::EdgeNoLabel],
-            &|_, edge| {
-                let weight = *edge.weight();
-
-                let intensity = weight.abs().clamp(0.0, 1.0);
-                let gray = ((1.0 - intensity) * 255.0) as u8;
-
-                format!(r##"color="#{0:02x}{0:02x}{0:02x}""##, gray)
-            },
-            &|_, _| String::new(),
-        );
-
-        format!("{}", dot)
-    }
-
-    pub fn save_dot(&self, path: &str) -> Result<()> {
-        let dot = self.graph_to_dot();
-        fs::write(path, dot)
-    }
-
-    // TODO:
-    // Should read this from a .yaml file
-    pub fn export_dot(&self, source_path: &str, destiny_path: &str) {
-        let out = Command::new("dot")
-            .arg(source_path)
-            .arg("-Gbgcolor=#000000")
-            .arg("-Grankdir=LR")
-            .arg("-Gsplines=spline")
-            .arg("-Gnodesep=0.9")
-            .arg("-Granksep=5.0 equally")
-            .arg("-Epenwidth=1.0")
-            .arg("-Nshape=circle")
-            .arg("-Nfixedsize=true")
-            .arg("-Nwidth=0.6")
-            .arg("-Nheight=0.6")
-            // .arg("-Nfontcolor=white")
-            .arg("-Ncolor=#FFFFFF") // Neuron color
-            // .arg("-Ecolor=#FFFFFF")
-            .arg("-Efontcolor=white")
-            .arg("-Earrowhead=none")
-            .arg("-Tpng")
-            .arg("-o")
-            .arg(destiny_path)
-            .status()
-            .expect(
-                "Couldn't execute the 'dot' command. Check if Graphviz is installed on your PATH",
-            );
-
-        if !out.success() {
-            eprintln!("Couldn't convert from .dot to .svg",);
-            return;
-        }
-
-        println!(
-            "Successfully converted from .dot to .svg - Check {}",
-            destiny_path
-        );
     }
 
     pub fn add_node(&mut self, p: Perceptron) {
