@@ -62,10 +62,6 @@ impl NetGraph {
         assert_eq!(model.modules[0].as_linear().in_sz, input.len());
     }
 
-    fn create_nodes(g: &mut DiGraph<Perceptron, f32>, n: usize) -> Vec<NodeIndex> {
-        (0..n).map(|i| g.add_node(Perceptron::new(i))).collect()
-    }
-
     fn create_node(g: &mut DiGraph<Perceptron, f32>, id: usize) -> NodeIndex {
         // TODO:
         // Check why this line bellow is being called every time
@@ -130,10 +126,10 @@ impl NetGraph {
         let previous_layer_start = 0;
 
         Self::extract_graph(self, number_neurons, previous_layer_start);
-        Self::graph_to_dot(&self);
+        Self::graph_to_dot(self);
 
-        Self::save_dot(&self, source)?;
-        Self::export_dot(&self, source, destiny);
+        Self::save_dot(self, source)?;
+        Self::export_dot(self, source, destiny);
 
         Ok(())
     }

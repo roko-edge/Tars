@@ -26,8 +26,7 @@ fn main() -> Result<()> {
     let mut net = NetGraph::new(model, &input);
 
     // generates a raw .dot file with network topology
-    net.network_to_graph();
-
+    net.network_to_graph()?;
     // export .dot to .svg
     net.plot();
 
