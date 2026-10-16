@@ -1,5 +1,5 @@
 use core::panic;
-use std::sync::Arc;
+use std::{sync::Arc, vec};
 
 #[derive(Debug)]
 pub enum DType {
@@ -54,13 +54,93 @@ impl Tensor {
         self.strides == Self::contiguous_strides(&self.shape)
     }
 
-    // pub fn zeros(shape: Vec<usize>) -> Self {
-    //     let numel = shape.iter().product();
+    pub fn zeros(shape: Vec<usize>, dtype: DType) -> Self {
+        let numel = shape.iter().product();
+
+        let storage = match dtype {
+            DType::F32 => Storage::F32(Arc::new(vec![0.0; numel])),
+            DType::I8 => Storage::I8 {
+                data: Arc::new(vec![0i8; numel]),
+                scale: 0.0,
+            },
+            DType::T3 => Storage::T3 {
+                data: Arc::new(vec![0u8; (numel + 3) / 4]),
+                scale: 0.0,
+            },
+        };
+
+        Self::from(storage, shape, 0)
+    }
+    fn storage_index(&self, indices: &[usize]) -> usize {
+        assert_eq!(
+            indices.len(),
+            self.shape.len(),
+            "indices must match with shape len"
+        );
+        let mut idx = self.offset;
+        for i in 0..indices.len() {
+            assert!(indices[i] < self.shape[i], "tensor index out of bounds");
+            idx += indices[i] * self.strides[i];
+        }
+        idx
+    }
     //
-    //     let storage = vec![0.0; numel];
-    //
-    //     Self::from(storage, shape, 0)
+    pub fn get(&self, index: &[usize]) -> f32 {
+        let idx = self.storage_index(index);
+        match &self.storage {
+            Storage::F32(storage) => storage[idx],
+            Storage::I8 { .. } => panic!(),
+            Storage::T3 { .. } => panic!(),
+        }
+    }
+    pub fn set(&mut self, index: &[usize], value: f32) {
+        let idx = self.storage_index(index);
+        let storage = match &mut self.storage {
+            Storage::F32(storage) => Arc::make_mut(storage),
+            Storage::I8 { .. } => panic!(),
+            Storage::T3 { .. } => panic!(),
+        };
+        storage[idx] = value;
+    }
+    pub fn shape(&self) -> &[usize] {
+        &self.shape
+    }
+
+    pub fn strides(&self) -> &[usize] {
+        &self.strides
+    }
+
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
+    pub fn numel(&self) -> usize {
+        self.shape.iter().product()
+    }
+    pub fn dtype(&self) -> DType {
+        match &self.storage {
+            Storage::F32(_) => DType::F32,
+            Storage::I8 { .. } => DType::I8,
+            Storage::T3 { .. } => DType::T3,
+        }
+    }
+
+    //TODO:
+    // pub fn contiguous(&self) -> Self {
+    //     if self.is_contiguous() && self.offset == 0 {
+    //         self.clone()
+    //     } else {
+    //         let mut out = Self::zeros(self.shape.clone(), self.dtype());
+    //         for i in 0..self.numel() {
+    //             out.storage[i] = self.get(i);
+    //         }
+    //     }
     // }
+    //
+    // pub fn storage(&self) -> Arc<Vec<f32>> {
+    //     self.storage.clone()
+    // }
+    //
     //
     // pub fn random_uniform(&mut self, low: f32, high: f32) {
     //     let storage =
@@ -71,81 +151,37 @@ impl Tensor {
     //     }
     // }
     //
-    // fn storage_index(&self, indices: &[usize]) -> usize {
-    //     assert_eq!(
-    //         indices.len(),
-    //         self.shape.len(),
-    //         "indices must match with shape len"
-    //     );
-    //     let mut idx = self.offset;
-    //     for i in 0..indices.len() {
-    //         assert!(indices[i] < self.shape[i], "tensor index out of bounds");
-    //         idx += indices[i] * self.strides[i];
-    //     }
-    //     idx
-    // }
     //
-    // pub fn get(&self, index: &[usize]) -> f32 {
-    //     let idx = self.storage_index(index);
-    //     self.storage[idx]
-    // }
     //
-    // pub fn storage(&self) -> Arc<Vec<f32>> {
-    //     self.storage.clone()
-    // }
-    //
-    // pub fn shape(&self) -> &[usize] {
-    //     &self.shape
-    // }
-    //
-    // pub fn strides(&self) -> &[usize] {
-    //     &self.strides
-    // }
-    //
-    // pub fn offset(&self) -> usize {
-    //     self.offset
-    // }
-    //
-    // pub fn set(&mut self, index: &[usize], value: f32) {
-    //     let idx = self.storage_index(index);
-    //     let storage =
-    //         Arc::get_mut(&mut self.storage).expect("cannot mutate tensor with shared storage");
-    //     storage[idx] = value;
-    // }
-    //
-    // pub fn numel(&self) -> usize {
-    //     self.shape.iter().product()
-    // }
-    //
-    // pub fn transpose_mut(&mut self, dim0: usize, dim1: usize) {
-    //     assert!(
-    //         dim0 < self.shape.len() && dim1 < self.shape.len(),
-    //         "dimension/s out of bounds"
-    //     );
-    //
-    //     self.shape.swap(dim0, dim1);
-    //     self.strides.swap(dim0, dim1);
-    // }
-    //
-    // pub fn transpose(&self, dim0: usize, dim1: usize) -> Self {
-    //     assert!(
-    //         dim0 < self.shape.len() && dim1 < self.shape.len(),
-    //         "dimension/s out of bouns"
-    //     );
-    //
-    //     let mut new_shape = self.shape.clone();
-    //     let mut new_strides = self.strides.clone();
-    //
-    //     new_shape.swap(dim0, dim1);
-    //     new_strides.swap(dim0, dim1);
-    //
-    //     Self {
-    //         storage: self.storage.clone(),
-    //         shape: new_shape,
-    //         strides: new_strides,
-    //         offset: self.offset,
-    //     }
-    // }
+    pub fn transpose_mut(&mut self, dim0: usize, dim1: usize) {
+        assert!(
+            dim0 < self.shape.len() && dim1 < self.shape.len(),
+            "dimension/s out of bounds"
+        );
+
+        self.shape.swap(dim0, dim1);
+        self.strides.swap(dim0, dim1);
+    }
+
+    pub fn transpose(&self, dim0: usize, dim1: usize) -> Self {
+        assert!(
+            dim0 < self.shape.len() && dim1 < self.shape.len(),
+            "dimension/s out of bouns"
+        );
+
+        let mut new_shape = self.shape.clone();
+        let mut new_strides = self.strides.clone();
+
+        new_shape.swap(dim0, dim1);
+        new_strides.swap(dim0, dim1);
+
+        Self {
+            storage: self.storage.clone(),
+            shape: new_shape,
+            strides: new_strides,
+            offset: self.offset,
+        }
+    }
     //
     // pub fn dot_product(&self, other: &Tensor) -> f32 {
     //     assert_eq!(self.shape, other.shape, "tensors has not the same shape");
