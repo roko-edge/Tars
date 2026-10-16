@@ -40,7 +40,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     export_data(&train.dataset)?;
 
     // Export the network topology to a .png
-    let mut net = NetGraph::new();
-    net.network_to_graph(&train.model, &train.dataset[0].input);
+    let mut net = NetGraph::new(train.model, &train.dataset[0].input);
+    net.network_to_graph()?;
+    net.plot();
     Ok(())
 }

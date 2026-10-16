@@ -8,7 +8,7 @@ use tars::view::graph::*;
 // Should the user be able to work with raw .dot for graph visualization?
 // Hyprparams and Visualization config should be passed to a .yaml file - Ex: output format (svg/png, etc), source and
 // destiny path.
-// There should be a csv to raw data extractor or is it overbloated?
+// There should be a csv to raw data extractor or is it overengineer?
 
 fn main() -> Result<()> {
     let model = Sequential::new(4)
