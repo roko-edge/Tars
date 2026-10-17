@@ -122,11 +122,8 @@ impl NetGraph {
         let previous_layer_start = 0;
 
         Self::extract_graph(self, number_neurons, previous_layer_start);
-        Self::graph_to_dot(self);
-
         Self::save_dot(self, source)?;
-        Self::export_dot(self, source, destiny);
-
+        Self::compile_dot(self, source, destiny);
         Ok(())
     }
 
