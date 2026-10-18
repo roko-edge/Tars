@@ -1,0 +1,27 @@
+# This file defines .dot compilation flags
+
+dot:
+  flags:
+    # Graph
+    - "-Gbgcolor=#000000"
+    - "-Grankdir=LR"
+    - "-Gsplines=spline"
+    - "-Gnodesep=0.9"
+    - "-Granksep=5.0 equally"
+
+    # Nodes
+    - "-Nshape=circle"
+    - "-Nfixedsize=true"
+    - "-Nwidth=0.6"
+    - "-Nheight=0.6"
+    # - "-Nfontcolor=white"
+    - "-Ncolor=#FFFFFF"
+
+    # Edges
+    - "-Epenwidth=1.0"
+    # - "-Ecolor=#FFFFFF"
+    - "-Efontcolor=white"
+    - "-Earrowhead=none"
+
+    # Output
+    - "-Tsvg"

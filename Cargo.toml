@@ -7,3 +7,5 @@ edition = "2024"
 rand = "0.10.3"
 plotters = "0.3"
 petgraph = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml_ng = "0.10.0"
