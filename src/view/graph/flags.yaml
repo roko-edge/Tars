@@ -24,4 +24,4 @@ dot:
     - "-Earrowhead=none"
 
     # Output
-    - "-Tsvg"
+    - "-Tpng"

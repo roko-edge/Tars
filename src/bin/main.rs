@@ -2,6 +2,9 @@ use std::error::Error;
 use tars::{view::graph::NetGraph, *};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // TODO:
+    // Netwok output's should be exported to a external file
+
     let mut train = experiments::or::train();
 
     println!("Starting {:?} experiment...", train.experiment_type);

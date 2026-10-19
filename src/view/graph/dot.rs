@@ -1,21 +1,10 @@
 use super::NetGraph;
 use petgraph::dot::{Config as DotOptions, Dot};
-use serde::Deserialize;
 use std::{error::Error, fs, process::Command};
-
-#[derive(Deserialize)]
-struct Config {
-    dot: DotConfig,
-}
-
-#[derive(Deserialize)]
-struct DotConfig {
-    flags: Vec<String>,
-}
+use yaml_rust2::YamlLoader;
 
 impl NetGraph {
     // This function should extract dot compile params from a .yaml file
-
     fn graph_to_dot(&self) -> String {
         let dot = Dot::with_attr_getters(
             &self.graph,
@@ -40,25 +29,31 @@ impl NetGraph {
     }
 
     fn extract_comp_flags() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        let flags = fs::read_to_string("flags.yaml")?;
-        let cfg: Config = serde_yaml_ng::from_str(&flags)?;
-        Ok(cfg.dot.flags)
+        let content = fs::read_to_string("src/view/graph/flags.yaml")?;
+        let docs = YamlLoader::load_from_str(&content)?;
+        let config = &docs[0];
+
+        let flags: Vec<String> = config["dot"]["flags"]
+            .as_vec()
+            .unwrap()
+            .iter()
+            .map(|x| x.as_str().unwrap().to_string())
+            .collect();
+
+        Ok(flags)
     }
 
     pub fn compile_dot(&self, source: &str, destiny: &str) -> Result<(), Box<dyn Error>> {
         let flags = Self::extract_comp_flags()?;
-
         let status = Command::new("dot")
             .arg(source)
             .args(&flags)
             .arg("-o")
             .arg(destiny)
             .status()?;
-
         if !status.success() {
             return Err("Graphviz failed to compile your graph".into());
         }
-
         Ok(())
     }
 }

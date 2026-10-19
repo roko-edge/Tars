@@ -3,7 +3,6 @@ use crate::sequential::Sequential;
 use core::fmt;
 use petgraph::prelude::*;
 use std::fmt::Debug;
-use std::io::Result;
 mod dot;
 
 // TODO:
@@ -101,9 +100,11 @@ impl NetGraph {
         }
     }
 
-    pub fn network_to_graph(&mut self) -> Result<()> {
+    pub fn network_to_graph(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         Self::check_input_size(&self.model, &self.input_data);
 
+        // FIX:
+        // Move this to .yaml comp flags
         let source = "src/view/artifacts/graph.dot";
         let destiny = "src/view/artifacts/network.png";
 
@@ -123,7 +124,7 @@ impl NetGraph {
 
         Self::extract_graph(self, number_neurons, previous_layer_start);
         Self::save_dot(self, source)?;
-        Self::compile_dot(self, source, destiny);
+        Self::compile_dot(self, source, destiny)?;
         Ok(())
     }
 
