@@ -8,7 +8,7 @@ impl NetGraph {
     fn graph_to_dot(&self) -> String {
         let dot = Dot::with_attr_getters(
             &self.graph,
-            &[DotOptions::EdgeNoLabel],
+            &[DotOptions::EdgeNoLabel][..],
             &|_, edge| {
                 // TODO:
                 // Refactor this to a external function

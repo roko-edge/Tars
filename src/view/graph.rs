@@ -51,14 +51,16 @@ impl NetGraph {
         }
     }
 
-    // TODO:
-    // This fn should return a error instead of Panic.
     fn check_input_size(model: &Sequential, input: &[f32]) {
-        assert_eq!(model.modules[0].as_linear().in_sz, input.len());
+        assert_eq!(
+            model.modules[0].as_linear().in_sz,
+            input.len(),
+            "Input size should be unique"
+        );
     }
 
     fn create_node(g: &mut DiGraph<Perceptron, f32>, id: usize) -> NodeIndex {
-        // TODO:
+        // FIX:
         // Check why this line bellow is being called every time
         // assert!(id >= 1, "Node's ID can't be negative!");
         let p = Perceptron::new(id);
@@ -76,7 +78,8 @@ impl NetGraph {
     }
 
     // TODO:
-    // Refactor this code to use tensor + iterators
+    // This should be an external function (used in main/train also) that uses tensor ope +
+    // iterators.
     fn extract_graph(&mut self, mut number_neurons: usize, mut previous_layer_start: usize) {
         for module in &self.model.modules {
             match module {

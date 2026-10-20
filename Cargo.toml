@@ -5,6 +5,5 @@ edition = "2024"
 
 [dependencies]
 rand = "0.10.3"
-plotters = "0.3"
 petgraph = "0.8"
 yaml-rust2 = "0.13.0"

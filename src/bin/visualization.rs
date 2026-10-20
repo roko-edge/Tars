@@ -1,5 +1,5 @@
+use tars::sequential::*;
 use tars::view::graph::*;
-use tars::{relu, sequential::*};
 
 // NOTE:
 // Should the user be able to work with raw .dot for graph visualization?

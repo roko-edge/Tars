@@ -2,9 +2,6 @@ use std::error::Error;
 use tars::{view::graph::NetGraph, *};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // TODO:
-    // Netwok output's should be exported to a external file
-
     let mut train = experiments::or::train();
 
     println!("Starting {:?} experiment...", train.experiment_type);
@@ -39,8 +36,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
     }
 
-    export_model(&train.model)?;
-    export_data(&train.dataset)?;
+    // export_model(&train.model)?;
+    // export_data(&train.dataset)?;
 
     // Export the network topology to a .png
     let mut net = NetGraph::new(train.model, &train.dataset[0].input);
