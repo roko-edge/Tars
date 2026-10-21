@@ -22,7 +22,7 @@ impl NetGraph {
         format!("{}", dot)
     }
 
-    pub fn save_dot(&self, path: &str) -> Result<(), std::io::Error> {
+    fn save_dot(&self, path: &str) -> Result<(), std::io::Error> {
         let dot = self.graph_to_dot();
         fs::write(path, dot)?;
         Ok(())
@@ -43,7 +43,7 @@ impl NetGraph {
         Ok(flags)
     }
 
-    pub fn compile_dot(&self, source: &str, destiny: &str) -> Result<(), Box<dyn Error>> {
+    fn compile_dot(&self, source: &str, destiny: &str) -> Result<(), Box<dyn Error>> {
         let flags = Self::extract_comp_flags()?;
         let status = Command::new("dot")
             .arg(source)
@@ -54,6 +54,16 @@ impl NetGraph {
         if !status.success() {
             return Err("Graphviz failed to compile your graph".into());
         }
+        Ok(())
+    }
+
+    pub fn export_topology(
+        &self,
+        source: &str,
+        destiny: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Self::save_dot(self, source)?;
+        Self::compile_dot(self, source, destiny)?;
         Ok(())
     }
 }

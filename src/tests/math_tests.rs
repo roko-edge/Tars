@@ -2,7 +2,6 @@ use std::env::var;
 
 use crate::math::*;
 
-// NOTE:
 // The highest precision we've got was:
 // mean => 3 points precision,
 // variation => 8 points precision.

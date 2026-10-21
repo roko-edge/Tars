@@ -108,8 +108,8 @@ impl NetGraph {
 
         // FIX:
         // Move this to .yaml comp flags
-        let source = "src/view/artifacts/graph.dot";
-        let destiny = "src/view/artifacts/network.png";
+        let source: &str = "src/view/artifacts/graph.dot";
+        let destiny: &str = "src/view/artifacts/network.png";
 
         // TODO:
         // Check what's wrong here:
@@ -126,8 +126,7 @@ impl NetGraph {
         let previous_layer_start = 0;
 
         Self::extract_graph(self, number_neurons, previous_layer_start);
-        Self::save_dot(self, source)?;
-        Self::compile_dot(self, source, destiny)?;
+        Self::export_topology(self, source, destiny)?;
         Ok(())
     }
 

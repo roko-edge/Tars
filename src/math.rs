@@ -10,7 +10,6 @@ pub fn random_vec(len: usize) -> Vec<f32> {
     vector
 }
 
-// NOTE:
 // rand::random_range() function generates a distribution with mean 1/2 and variance 1/12. But,
 // our goal is to produce a pseudo-rng with mean 0 and variance 1 - according to xavier glorot. So,
 // we apply the linear transformation T = srqt(3) * (2*u -1).
@@ -24,7 +23,6 @@ pub fn prng(low: f32, high: f32) -> f32 {
     3.0_f32.sqrt() * (2.0 * u - 1.0)
 }
 
-// NOTE:
 // This function returns a vector of n random weights sampled as prng(0, 1) / sqrt(n).
 // This scaling is necessary because of the variance property: Var(aX) = a^2 * Var(X).
 // Since Var(X) = 1 for prng(0, 1):
@@ -37,7 +35,6 @@ pub fn xavier(n: usize) -> Vec<f32> {
     (0..n).map(|_| prng(0.0, 1.0) / (n as f32).sqrt()).collect()
 }
 
-// NOTE:
 // This function returns a random number between from the discrete interval [-1, 0, 1]
 // By standard, this strategy generates a distribution with with mean 0 and variance = 2/3.
 // The mean is ok, but we need a variance = 1. To fix that, we use the fact that var(a*x) = a^2 *

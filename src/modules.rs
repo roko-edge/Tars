@@ -4,6 +4,7 @@ pub mod sequential;
 pub use activations::*;
 pub use linear::*;
 pub use sequential::*;
+
 pub trait Module {
     fn forward(&self, input: &[f32]) -> Vec<f32>;
 }
@@ -13,6 +14,7 @@ pub enum AnyModule {
     Linear(Linear),
     Activation(Activation),
 }
+
 impl AnyModule {
     pub fn as_linear(&self) -> &Linear {
         match self {
@@ -20,6 +22,7 @@ impl AnyModule {
             _ => panic!(""),
         }
     }
+
     pub fn as_mut_linear(&mut self) -> &mut Linear {
         match self {
             Self::Linear(linear) => linear,
@@ -27,6 +30,7 @@ impl AnyModule {
         }
     }
 }
+
 impl Module for AnyModule {
     fn forward(&self, input: &[f32]) -> Vec<f32> {
         match self {
