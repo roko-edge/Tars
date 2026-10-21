@@ -35,21 +35,23 @@ nix develop ..#hardware
 ```
 
 The shell provides GNU Make, Icarus Verilog, Verilator, GTKWave, and Verible.
-The Makefile automatically invokes the parent hardware shell when `iverilog` is not
-already available on `PATH`.
+The Makefile automatically invokes the parent hardware shell when `verilator` is not
+already available on `PATH`. The Verilator binary build requires a Python 3
+interpreter, which the hardware shell does not currently provide; `make sim` fails
+with `python3: command not found` until one is present on the path.
 
 ## Commands
 
 Run these commands from `npu/`:
 
 ```bash
-make sim     # Compiles and runs simulation using Icarus Verilog
+make sim     # Compiles and runs simulation using Verilator
 make wave    # Opens GTKWave with build/dump.vcd
 make lint    # Runs Verilator lint-only checks on src/ and tests/
-make clean   # Removes build/ artifacts and vvp binaries
+make clean   # Removes the build/ directory
 ```
 
-`make sim` compiles `src/pe.sv`, `src/npu.sv`, and `tests/tb.sv` with Icarus Verilog and prints output. Waveforms are dumped to `build/dump.vcd`. Automated golden assertion checks with non-zero exit codes are scheduled for Phase 4.
+`make sim` compiles `src/pe.sv`, `src/npu.sv`, and `tests/tb.sv` with the Verilator `--binary --timing --trace` flow and prints output. Waveforms are dumped to `build/dump.vcd`. The testbench asserts no expected value and returns no non-zero exit code; automated golden assertion checks are scheduled for Phase 4. `make lint` currently reports four index-width warnings in `src/npu.sv` and therefore exits non-zero.
 
 ## Memory Representation
 

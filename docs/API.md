@@ -26,7 +26,7 @@ See [`EXPERIMENTS.md`](EXPERIMENTS.md) for topologies, datasets, and execution b
 |---|---|---|
 | `Module` | Forward evaluation over `&[f32]` | The current interface is vector-based, not tensor-based |
 | `Sequential` | Construction, linear layers, ReLU, sigmoid, and forward evaluation | Supports an ordered linear chain only |
-| `Linear` | Construction from explicit parameters, zeros, or random initialization | `Sequential` uses the zeros constructor; dimensions are assumed to be consistent |
+| `Linear` | Construction from explicit parameters, zeros, or random initialization | `Sequential` uses the random constructor; dimensions are assumed to be consistent |
 | `Activation` | ReLU and sigmoid evaluation | No additional activation variants are implemented |
 | `AnyModule` | Runtime dispatch over linear and activation modules | Typed accessors panic when used with the wrong variant |
 
@@ -65,13 +65,20 @@ artifact paths. They are not an automated end-to-end pipeline.
 
 ## 5. Experimental Tensor Surface
 
-`Tensor` is public but incomplete. The current implementation provides construction
-(including zeros), index lookup, mutation under exclusive storage ownership, element
-count, a contiguity check, zero-copy `transpose` variants, element-wise `add`/`sub`
-with in-place variants, scalar multiply and divide with in-place variants, a
-storage-based `dot_product`, and shape, strides, and offset accessors. Element-wise
-kernels iterate raw storage from the tensor offset and do not respect arbitrary
-strides, and the existing tests do not compile against the current interface.
+`Tensor` is public but incomplete. The current implementation provides the following
+surface:
 
-The complete storage, view, broadcasting, and copy-on-write behavior under
+| Resource | Implemented operations | Important constraint |
+|---|---|---|
+| `Tensor::new` | Wraps a storage in a canonical row-major view | The element capacity of the storage is not validated against the shape product |
+| `Tensor::zeros` | Allocates a zeroed buffer for a shape and data type | The packed variants receive a degenerate zero scale, and the ternary fill encoding is not yet materialized |
+| `Tensor::get`, `Tensor::set` | Index lookup and mutation over `f32` storage | The packed variants are not supported; mutation duplicates a shared buffer before writing |
+| `Tensor::transpose` | Zero-copy axis swap of shape and stride vectors | The diagnostic of an out-of-range axis identifier does not name the violated precondition |
+| `Tensor::transpose_mut` | In-place axis swap of shape and stride vectors; alters metadata only and does not write to the storage buffer | The diagnostic of an out-of-range axis identifier does not name the violated precondition; the operation has no test coverage |
+| `Tensor::shape`, `Tensor::strides`, `Tensor::offset`, `Tensor::numel`, `Tensor::dtype` | Geometry and type accessors | The type tag is not yet a one-byte copyable value |
+| `Tensor::is_contiguous` | Row-major stride check | Requires canonical strides and a zero physical offset; the check additionally requires a non-empty backing buffer, and terminates on the packed variants |
+
+The element-wise kernels, the reductions, the products, and the packed access paths
+are specified but absent. The complete storage, view, broadcasting, and
+copy-on-write behavior under
 [`engineering/specs/TENSOR.md`](engineering/specs/TENSOR.md) is a target contract.

@@ -17,7 +17,10 @@ nix develop .#hardware
 
 The default shell contains the Rust and hardware toolchains. The Rust shell includes
 Graphviz and the visualization dependencies. The hardware shell includes GNU Make,
-Icarus Verilog, Verilator, GTKWave, and Verible.
+Icarus Verilog, Verilator, GTKWave, and Verible. The Verilator binary build invoked by
+`npu/Makefile` requires a Python 3 interpreter, which the hardware shell does not
+currently provide; the `make sim` target fails with `python3: command not found` until
+one is present on the path.
 
 Without Nix, provide a Rust 2024 toolchain and the corresponding system tools manually.
 
@@ -33,8 +36,9 @@ cargo build
 
 The package contains the library and two binaries, `main` and `visualization`.
 
-`cargo test` is not currently a successful verification command. Tensor tests exist,
-but they do not compile against the current `Tensor` interface.
+`cargo test` compiles and passes. The suite contains four tests; one of them exercises
+the tensor core, and the module hierarchy, the optimizer, and the export path have no
+coverage yet.
 
 ---
 
