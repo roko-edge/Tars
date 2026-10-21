@@ -8,7 +8,7 @@ build/
 .omo/
 src/view/artifacts/*
 .nvim/
-
+npu/.nvim/
 # Hardware Synthesis (Vivado / EDA Tools)
 build_vivado/
 .Xil/

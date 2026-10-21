@@ -4,12 +4,11 @@ module npu #(
 
 ) (
     input logic clk,
-    input logic rst,
-    input logic start,
+    rst,
+    start,
     input logic [1:0] activation,
-    output logic done,
-    output logic signed [31:0] result[OUT]
-
+    output logic signed [31:0] result[OUT],
+    output logic done
 );
   typedef enum logic [1:0] {
     RELU = 1,
@@ -36,8 +35,8 @@ module npu #(
       .rst        (rst),
       .init       (i == 0),
       .en         (state == BUSY),
-      .a          (a[i]),
-      .w          (w[j*IN+i]),
+      .a          (a[32'(i)]),
+      .w          (w[32'(j*IN+i)]),
       .accumulator(pe_acc)
   );
 
