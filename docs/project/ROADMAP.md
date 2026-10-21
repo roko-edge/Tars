@@ -106,25 +106,31 @@ conditions are met and peer reviews are recorded.
   - [x] Implement baseline `cargo test` harness in `src/tests/` for automated Rust regression testing.
 
 - **Gildo:**
-  - [ ] Review `docs/engineering/specs/TENSOR.md` for algorithm suitability.
-  - [ ] Implement tensor element-wise arithmetic kernels (`add`, `sub`, `mul`, `div`) respecting strided storage.
-  - [ ] Implement memory reduction operations (`sum`, `mean`) along arbitrary axes.
-  - [ ] Perform initial peer review of NPU RTL files (`npu/src/npu.sv`, `npu/src/pe.sv`, `npu/tests/tb.sv`, `npu/Makefile`).
+  - [x] Review `docs/engineering/specs/TENSOR.md` for algorithm suitability. The outcome is the revision of the specification and the delivery plan at `docs/project/TENSOR_PHASE_B.md`, which decomposes the phase into the work packages WP-01 through WP-13.
+  - [ ] Deliver the foundation of the `F32` tensor core: a one-byte copyable and comparable type tag, separation of the public `contiguous` operation from the internal stride helper, rank-zero-safe logical index iteration, and a descriptive diagnostic on every precondition violation.
+  - [ ] Deliver the geometry and the views: validation of the element capacity at construction, logical-element addressing per Section 2.3 of the specification, and the axis swap in both variants under the contract of Section 4.
+  - [ ] Deliver the memory operations and the element-wise kernels: the public `contiguous` operation, the pointwise kernels `add`, `sub`, `mul_scalar`, `div_scalar`, and `map`, and the full reduction `sum`, each honouring the stride vector of the operand.
+  - [ ] Deliver the products `matmul`, `matvec`, and `outer` over `F32`, reproducing the forward pass of the linear layer in the orientation it consumes.
+  - [ ] Deliver the bulk access surface required by the exporter, the graph renderer, and the later migration of the linear layer.
+  - [ ] Establish the tensor test suite: geometry, construction preconditions, contiguity, views, kernels, reduction, products, bulk access, and the failure path of every precondition of Section 4.1 of the specification.
+  - [ ] Perform initial peer review of NPU RTL files (`npu/src/npu.sv`, `npu/src/pe.sv`, `npu/tests/tb.sv`, `npu/Makefile`). Recorded findings: four index-width warnings at `npu/src/npu.sv` lines 39, 40, 47, and 87; the testbench asserts no expected value and returns no non-zero exit code; the simulation flow requires a Python 3 interpreter that the `hardware` development shell does not provide; and the package roles declared in `flake.nix` do not correspond to the flow driven by `npu/Makefile`.
 
-**Phase 1 Gate:** All specification documents merged into `main`. Canonical XOR loss curves locked in regression fixtures via `cargo test`. NPU testbench compiles and traces cleanly under Icarus Verilog and passes initial RTL review.
+**Phase 1 Gate:** All specification documents merged into `main`. Canonical XOR loss curves locked in regression fixtures via `cargo test`. NPU testbench compiles and traces cleanly under Verilator and passes initial RTL review.
+
+**Gate state:** Open. The specification revision and the delivery plan exist in the working tree and are not yet merged. The `cargo test` suite holds four tests, of which one exercises the tensor core, and no regression fixture captures the loss trajectories of the OR and XOR models, so the second condition of the gate is unmet. The testbench compiles and traces under Verilator when a Python 3 interpreter is present on the path, which the `hardware` development shell does not currently provide, and the initial RTL review has recorded findings that remain open, so the third condition is unmet as well.
 
 ---
 
 ### Phase 2: Core Abstractions and Hardware Upgrades
 
 - **Gustavo:**
-  - [ ] Implement `DType` enum (`F32`, `Q8_24`, `Ternary`) on `Tensor` in `src/math/tensor.rs`.
+  - [ ] Implement `DType` enum (`F32`, `I8`, `T3`) on `Tensor` in `src/math/tensor.rs`: complete the packed storage representations of the `I8` and `T3` variants, the dequantization of Section 3.3, and the ternary encoding of Section 3.1 of the specification. The one-byte copyable and comparable tag is delivered in Phase 1.
   - [ ] Implement weight initialization algorithms (Xavier/Glorot, He/Kaiming, and ternary $\{-1, 0, +1\}$ distribution) with deterministic seed support.
   - [ ] Build comprehensive unit test suite in `src/tests/` for tensor storage, shapes, strides, and dimension assertions.
   - [ ] Design benchmark harness for tracking loss curves, training convergence rates, and memory allocations.
   - [ ] Implement dataset loading and batching pipeline for MNIST.
 - **Gildo:**
-  - [ ] Deliver zero-copy tensor views (`slice`, `transpose`, `reshape`, `permute`) via strided index projection.
+  - [ ] Deliver the deferred zero-copy tensor views (`slice`, `permute`, `reshape`) via strided index projection, each of which requires a contract clause in `docs/engineering/specs/TENSOR.md` before implementation. The axis swap is delivered in Phase 1.
   - [ ] Implement NumPy-compliant multidimensional broadcasting resolution and safe copy-on-write (COW) mutation semantics (`Arc::make_mut`).
   - [ ] Implement cache-friendly row-major matrix multiplication (`matmul`) with dimension assertions.
   - [ ] Review Arthur's NPU microarchitecture updates: audit FSM transitions, 64-bit saturating accumulator arithmetic, and signed ReLU activation logic.
@@ -144,6 +150,7 @@ conditions are met and peer reviews are recorded.
   - [ ] Migrate `Linear` layer to store weights and biases as contiguous `Tensor` instances.
   - [ ] Re-engineer `backward()`: perform full backward pass using batched matrix multiplications, eliminating `Vec<Vec<f32>>` allocations.
   - [ ] Eliminate redundant model cloning in gradient structures (`Grad`).
+  - [ ] Deliver the reductions along arbitrary axes and the `mean` reduction, each of which requires a contract clause in `docs/engineering/specs/TENSOR.md` before implementation; the full reduction `sum` is delivered in Phase 1.
   - [ ] Review NPU multi-cycle Layer Engine FSM implementation.
 - **Gustavo:**
   - [ ] Implement ternary weight compute kernels: mixed-precision `matmul` ($\text{act} \times \text{ternary}$) with conditional accumulation and scaling by $W_0$.

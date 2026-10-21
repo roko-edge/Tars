@@ -14,14 +14,14 @@ This document reflects the current state of the repository as of October 2026.
 | Sequential Model | Implemented | `Sequential` stores `Vec<AnyModule>`; the tensor-based replacement is specified under `docs/engineering/` |
 | Dense Layer | Implemented | `Linear` uses `Vec<Vec<f32>>` weights and `Vec<f32>` biases |
 | Activations | Implemented | ReLU and Sigmoid modules |
-| Tensor Core | In Progress | `Tensor` in `src/math/tensor.rs` refactored to container-level `Storage` dispatch (`F32`, `I8`, `T3`) and metadata `DType`; contiguous stride checking, zero-copy `transpose`, `get`/`set` with COW (`Arc::make_mut`), and parameterized `zeros` are active; linear algebra (`matmul`), element-wise kernels respecting strides, and reduction operations are in progress to support migration of `Linear` and `backward()` |
+| Tensor Core | In Progress | `Tensor` in `src/math/tensor.rs` refactored to container-level `Storage` dispatch (`F32`, `I8`, `T3`) and metadata `DType`; contiguous stride checking, zero-copy `transpose` and its in-place variant, `get`/`set` with COW (`Arc::make_mut`), and parameterized `zeros` are active. The element-wise kernels, the reductions, the products (`matmul`, `matvec`, `outer`), the public `contiguous` operation, the bulk access surface, and the `I8`/`T3` access paths are specified under `docs/engineering/specs/TENSOR.md` and not yet implemented. The delivery phase in progress covers the `F32` core, including the axis swap in both variants and the bulk access surface |
 | Loss Function | Implemented | Mean Squared Error (MSE) across outputs and dataset samples |
 | Analytical Backpropagation | Implemented | Full analytical backprop in `src/optim/grad.rs` (`backward()`) |
 | Finite-Difference Gradient | Implemented | Centered finite differences in `src/optim/grad.rs` (`num_grad()`), retained for verification |
 | Optimizer | Implemented | Batch Gradient Descent (BGD) applying computed gradients |
 | Experiments | Implemented | Built-in OR and XOR experiment factories |
 | Fixed-Point Export | Implemented | `export_model()` and `export_data()` convert values to Q8.24 fixed-point hex files under `npu/data/` (`weights.mem`, `bias.mem`, `activations.mem`, `target.mem`) |
-| Automated Tests | Broken | Tensor tests exist but do not compile against the current `Tensor` interface; `cargo check --tests` reports ten interface errors |
+| Automated Tests | Available | `cargo test` compiles and passes. Four tests exist; only one exercises `Tensor`, and the tensor core, the module hierarchy, and the optimizer have no coverage |
 
 The Rust implementation uses `f32`, `std`, and dynamically allocated vectors. Analytical backpropagation is present, but operates on nested vectors rather than contiguous tensors.
 
@@ -53,8 +53,8 @@ The package exports a `view` module backed by `petgraph`. `NetGraph::network_to_
 | `cargo build` | Available | Compiles the Rust package and binaries |
 | `cargo run --bin main` | Available | Trains the source-selected OR model and exports four Q8.24 files under `npu/data/`, overwriting the files read by the NPU testbench |
 | `cargo run --bin visualization` | Available | Requires Graphviz; generates graph DOT and PNG artifacts |
-| `cargo test` | Broken | Existing tensor tests do not compile against the current implementation |
-| `make sim` (from `npu/`) | Partial | Compiles `src/pe.sv`, `src/npu.sv`, and `tests/tb.sv` using Icarus Verilog and prints output; lacks pass/fail checks |
+| `cargo test` | Available | Compiles and passes four tests; coverage of the tensor core and of the training path is not yet established |
+| `make sim` (from `npu/`) | Blocked | The target drives the Verilator `--binary --timing --trace` flow, whose generated C++ build invokes `python3`. The `hardware` development shell declared in `flake.nix` does not provide a Python 3 interpreter, so the target terminates with `python3: command not found` in the sanctioned environment. It completes and prints output when a Python 3 interpreter is present on `PATH`. Lacks pass/fail checks in either case |
 | `make test` / `make all` | Partial | Aliases `sim` |
 | `make wave` | Available | Runs GTKWave against `build/dump.vcd` generated from simulation |
 | `make lint` | Partial | Runs Verilator lint-only checks on `src/` and `tests/` sources; currently exits non-zero with four index-width warnings (`WIDTHTRUNC`/`WIDTHEXPAND`) in `npu/src/npu.sv` |
@@ -67,5 +67,7 @@ The package exports a `view` module backed by `petgraph`. `NetGraph::network_to_
 1. **Testbench Self-Checking:** The NPU testbench (`tests/tb.sv`) prints result signals but does not assert equality against expected values or return a non-zero exit code on failure.
 2. **Q8.24 Rounding Strategy:** Rust export (`src/export.rs`) and SystemVerilog arithmetic (`npu/src/npu.sv`, `npu/src/pe.sv`) perform truncation (`as i32` / bit slicing) rather than round-half-to-even.
 3. **NPU RTL Lint:** Verilator reports four index-width warnings on the `i` and `j` index expressions in `npu/src/npu.sv`, so `make lint` exits non-zero.
-4. **Vector Tensor Storage:** Linear layers and gradients currently allocate nested vectors (`Vec<Vec<f32>>`), requiring migration to contiguous `Tensor` storage.
-5. **Artifact Integration:** Rust export and the testbench share `npu/data/`; a training run overwrites the checked-in memory files. Exports still omit activation functions and topology, and `target.mem` contains dataset labels rather than golden Q8.24 inference outputs.
+4. **Vector Tensor Storage:** Linear layers and gradients currently allocate nested vectors (`Vec<Vec<f32>>`), requiring migration to contiguous `Tensor` storage. The tensor core must first satisfy the surface enumerated in `docs/engineering/specs/TENSOR.md`, Section 4.2.
+5. **Gradient Verification:** The analytical and finite-difference gradients share the same scale, but the finite-difference estimator evaluates the loss difference in single precision with a step of $10^{-3}$, which places the attainable precision near the tolerance of $\epsilon \le 10^{-4}$ required by the project roadmap. Accumulation in double precision and a relative tolerance are required before the check is authoritative.
+6. **Artifact Integration:** Rust export and the testbench share `npu/data/`; a training run overwrites the checked-in memory files. Exports still omit activation functions and topology, and `target.mem` contains dataset labels rather than golden Q8.24 inference outputs.
+7. **NPU Simulation Toolchain:** `npu/Makefile` drives the simulation through Verilator and never invokes Icarus Verilog, while `flake.nix` describes `iverilog` as the simulator and `verilator` as the static linter. The `hardware` development shell also omits the Python 3 interpreter that the Verilator binary build requires, which is the direct cause of the `make sim` failure recorded in the command status table. The role declaration of the two packages and the interpreter dependency require correction by the maintainer, as both files are outside the scope of automated documentation maintenance.
