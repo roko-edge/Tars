@@ -50,8 +50,47 @@ impl Tensor {
         strides
     }
 
+    fn total_logical(shape: &Vec<usize>, v: &mut Vec<usize>) {
+        v[shape.len() - 1] += 1;
+
+        let mut i = shape.len() - 1;
+
+        while v[i] >= shape[i] {
+            v[i] = 0;
+
+            if i > 0 {
+                v[i - 1] += 1;
+                i -= 1;
+            }
+        }
+    }
+
+    fn make_contiguous(&self) -> Self {
+        if self.is_contiguous() {
+            self.clone()
+        } else {
+            let mut tensor = Self::zeros(self.shape.clone(), self.dtype());
+            let mut indices = vec![0usize; self.shape.len()];
+
+            for _ in 0..self.numel() {
+                tensor.set(&indices, self.get(&indices));
+                Self::total_logical(&self.shape, &mut indices);
+            }
+
+            tensor
+        }
+    }
+
+    // fn make_contiguous_mut(&self) -> Self {}
+
     pub fn is_contiguous(&self) -> bool {
         self.strides == Self::contiguous_strides(&self.shape)
+            && self.offset == 0
+            && match &self.storage {
+                Storage::F32(storage) => storage.len() != 0,
+                Storage::I8 { .. } => panic!(),
+                Storage::T3 { .. } => panic!(),
+            }
     }
 
     pub fn zeros(shape: Vec<usize>, dtype: DType) -> Self {
@@ -125,34 +164,13 @@ impl Tensor {
         }
     }
 
-    //TODO:
-    // pub fn contiguous(&self) -> Self {
-    //     if self.is_contiguous() && self.offset == 0 {
-    //         self.clone()
-    //     } else {
-    //         let mut out = Self::zeros(self.shape.clone(), self.dtype());
-    //         for i in 0..self.numel() {
-    //             out.storage[i] = self.get(i);
-    //         }
-    //     }
-    // }
-    //
-    // pub fn storage(&self) -> Arc<Vec<f32>> {
-    //     self.storage.clone()
-    // }
-    //
-    //
-    // pub fn random_uniform(&mut self, low: f32, high: f32) {
-    //     let storage =
-    //         Arc::get_mut(&mut self.storage).expect("***N sei o que faz, boto o erro dps***");
-    //
-    //     for i in 0..storage.len() {
-    //         storage[i] = low + (high - low) * rand::random::<f32>();
-    //     }
-    // }
-    //
-    //
-    //
+    pub fn storage(&self) -> Arc<Vec<f32>> {
+        match &self.storage {
+            Storage::F32(storage) => storage.clone(),
+            Storage::I8 { .. } => panic!(),
+            Storage::T3 { .. } => panic!(),
+        }
+    }
     pub fn transpose_mut(&mut self, dim0: usize, dim1: usize) {
         assert!(
             dim0 < self.shape.len() && dim1 < self.shape.len(),
@@ -162,11 +180,10 @@ impl Tensor {
         self.shape.swap(dim0, dim1);
         self.strides.swap(dim0, dim1);
     }
-
     pub fn transpose(&self, dim0: usize, dim1: usize) -> Self {
         assert!(
             dim0 < self.shape.len() && dim1 < self.shape.len(),
-            "dimension/s out of bouns"
+            "dimension/s out of bounds"
         );
 
         let mut new_shape = self.shape.clone();
