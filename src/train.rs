@@ -10,3 +10,7 @@ pub struct Train {
     pub dataset: Vec<Data>,
     pub experiment_type: ExperimentType,
 }
+
+impl Train {
+    pub fn view_metrics() {}
+}

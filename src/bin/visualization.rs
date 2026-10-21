@@ -7,14 +7,8 @@ use tars::view::graph::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model = Sequential::new(5).linear(8).relu().linear(5).relu();
-
     let input = vec![1.0, 0.676767, 0.53, 0.22, 0.5];
-
     let mut net = NetGraph::new(model, &input);
-
-    // generates a raw .dot file with network topology
     net.network_to_graph()?;
-    // export .dot to .svg net.plot();
-
     Ok(())
 }

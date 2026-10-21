@@ -23,8 +23,6 @@ pub struct Tensor {
     offset: usize,
 }
 
-// This enum defines all types that a tensor can store. functions that implemments a tensor operator should override each operator based on the type you're working with.
-
 impl Tensor {
     pub fn new(storage: Storage, shape: Vec<usize>) -> Self {
         Self::from(storage, shape, 0)
@@ -64,27 +62,32 @@ impl Tensor {
                 scale: 0.0,
             },
             DType::T3 => Storage::T3 {
-                data: Arc::new(vec![0u8; (numel + 3) / 4]),
+                data: Arc::new(vec![0u8; (numel + 3).div_ceil(4)]),
                 scale: 0.0,
             },
         };
 
         Self::from(storage, shape, 0)
     }
+
     fn storage_index(&self, indices: &[usize]) -> usize {
         assert_eq!(
             indices.len(),
             self.shape.len(),
             "indices must match with shape len"
         );
-        let mut idx = self.offset;
-        for i in 0..indices.len() {
-            assert!(indices[i] < self.shape[i], "tensor index out of bounds");
-            idx += indices[i] * self.strides[i];
-        }
+        let idx: usize = indices
+            .iter()
+            .zip(self.shape.iter())
+            .zip(self.strides.iter())
+            .map(|((&index, &dim), &stride)| {
+                assert!(index < dim, "tensor index out of bounds!");
+                index * stride
+            })
+            .sum();
         idx
     }
-    //
+
     pub fn get(&self, index: &[usize]) -> f32 {
         let idx = self.storage_index(index);
         match &self.storage {

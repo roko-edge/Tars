@@ -5,9 +5,6 @@ use petgraph::prelude::*;
 use std::fmt::Debug;
 mod dot;
 
-// TODO:
-// Split this module into dot operations and graph extract.
-
 #[derive(Clone, Debug)]
 pub struct Perceptron {
     id: usize,
@@ -26,7 +23,8 @@ impl fmt::Display for Perceptron {
 }
 
 /*
- * Note: All nodes are added to the graph in increasing order.
+ * Note:
+ * All nodes are added to the graph in increasing order.
  * Ex: [h0, h1, h2, h3, ... ]
  *      0   1   2   3   ...
  * This is important becasue it allows us to find a node's index in O(1) time.
@@ -106,8 +104,6 @@ impl NetGraph {
     pub fn network_to_graph(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         Self::check_input_size(&self.model, &self.input_data);
 
-        // FIX:
-        // Move this to .yaml comp flags
         let source: &str = "src/view/artifacts/graph.dot";
         let destiny: &str = "src/view/artifacts/network.png";
 
