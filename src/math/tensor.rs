@@ -74,11 +74,11 @@ impl Tensor {
             self.clone()
         } else {
             let mut tensor = Self::zeros(self.shape.clone(), self.dtype());
-            let mut indices = vec![0usize; self.shape.len()];
+            let mut idx = vec![0usize; self.shape.len()];
 
             for _ in 0..self.numel() {
-                tensor.set(&indices, self.get(&indices));
-                Self::step_logical(&self.shape, &mut indices);
+                tensor.set(&idx, self.get(&idx));
+                Self::step_logical(&self.shape, &mut idx);
             }
 
             tensor
@@ -280,7 +280,7 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
-    pub fn mul_escalar(&self, s: f32) -> Self {
+    pub fn mul_scalar(&self, s: f32) -> Self {
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
         let mut idx = vec![0usize; self.shape.len()];
         for _ in 0..self.numel() {
@@ -289,14 +289,14 @@ impl Tensor {
         }
         out
     }
-    pub fn mul_escalar_mut(&mut self, s: f32) {
+    pub fn mul_scalar_mut(&mut self, s: f32) {
         let mut idx = vec![0usize; self.shape.len()];
         for _ in 0..self.numel() {
             self.set(&idx, self.get(&idx) * s);
             Self::step_logical(&self.shape, &mut idx);
         }
     }
-    pub fn div_escalar(&self, s: f32) -> Self {
+    pub fn div_scalar(&self, s: f32) -> Self {
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
         let mut idx = vec![0usize; self.shape.len()];
         for _ in 0..self.numel() {
@@ -305,7 +305,7 @@ impl Tensor {
         }
         out
     }
-    pub fn div_escalar_mut(&mut self, s: f32) {
+    pub fn div_scalar_mut(&mut self, s: f32) {
         let mut idx = vec![0usize; self.shape.len()];
         for _ in 0..self.numel() {
             self.set(&idx, self.get(&idx) / s);
@@ -328,201 +328,57 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
-    //
-    // pub fn dot_product(&self, other: &Tensor) -> f32 {
-    //     assert_eq!(self.shape, other.shape, "tensors has not the same shape");
-    //
-    //     let mut sum = 0.0;
-    //     let rank = self.shape.len();
-    //
-    //     match rank {
-    //         1 => {
-    //             for i in 0..self.shape[0] {
-    //                 sum += self.get(&[i]) * other.get(&[i])
-    //             }
-    //         }
-    //         2 => {
-    //             for i in 0..self.shape[0] {
-    //                 for j in 0..self.shape[1] {
-    //                     sum += self.get(&[i, j]) * other.get(&[i, j]);
-    //                 }
-    //             }
-    //         }
-    //         _ => {
-    //             panic!("Only implemented to 1 and 2 dimensions")
-    //         }
-    //     }
-    //
-    //     sum
-    // }
-    //
-    // pub fn add(&self, tensor: &Tensor) -> Self {
-    //     assert_eq!(self.shape, tensor.shape, "shape doesn't match");
-    //
-    //     let mut new_tensor = Tensor::zeros(self.shape.clone());
-    //     let rank = self.shape.len();
-    //
-    //     match rank {
-    //         1 => {
-    //             for i in 0..self.shape[0] {
-    //                 new_tensor.set(&[i], self.get(&[i]) + tensor.get(&[i]));
-    //             }
-    //         }
-    //         2 => {
-    //             for i in 0..self.shape[0] {
-    //                 for j in 0..self.shape[1] {
-    //                     new_tensor.set(&[i, j], self.get(&[i, j]) + tensor.get(&[i, j]));
-    //                 }
-    //             }
-    //         }
-    //         _ => {
-    //             panic!("Only implemented to 1 and 2 dimensions")
-    //         }
-    //     }
-    //
-    //     new_tensor
-    // }
-    //
-    // pub fn add_mut(&mut self, tensor: &Tensor) {
-    //     assert_eq!(self.shape, tensor.shape, "shape doesn't match");
-    //
-    //     let storage = Arc::make_mut(&mut self.storage);
-    //
-    //     for i in self.offset..storage.len() {
-    //         storage[i] += tensor.storage[i];
-    //     }
-    // }
-    //
-    // pub fn sub(&self, tensor: &Tensor) -> Self {
-    //     assert_eq!(self.shape, tensor.shape, "shape doesn't match");
-    //     assert_eq!(self.offset, tensor.offset, "offset doesn't match");
-    //
-    //     let mut new_storage = self.storage.clone();
-    //     let storage = Arc::make_mut(&mut new_storage);
-    //
-    //     for i in self.offset..storage.len() {
-    //         storage[i] -= tensor.storage[i];
-    //     }
-    //
-    //     Self {
-    //         storage: new_storage,
-    //         shape: self.shape.clone(),
-    //         strides: self.strides.clone(),
-    //         offset: 0,
-    //     }
-    // }
-    //
-    // pub fn sub_mut(&mut self, tensor: &Tensor) {
-    //     assert_eq!(self.shape, tensor.shape, "shape doesn't match");
-    //     assert_eq!(self.offset, tensor.offset, "offset doesn't match");
-    //
-    //     let storage = Arc::make_mut(&mut self.storage);
-    //
-    //     for i in self.offset..storage.len() {
-    //         storage[i] -= tensor.storage[i];
-    //     }
-    // }
-    //
-    // pub fn mut_scalar(&self, s: f32) -> Self {
-    //     let mut new_storage = self.storage.clone();
-    //     let storage = Arc::make_mut(&mut new_storage);
-    //
-    //     for i in self.offset..self.storage.len() {
-    //         storage[i] *= s;
-    //     }
-    //
-    //     Self {
-    //         storage: new_storage,
-    //         shape: self.shape.clone(),
-    //         strides: self.strides.clone(),
-    //         offset: 0,
-    //     }
-    // }
-    //
-    // pub fn mut_scalar_mut(&mut self, s: f32) {
-    //     let storage = Arc::make_mut(&mut self.storage);
-    //
-    //     for i in self.offset..storage.len() {
-    //         storage[i] *= s;
-    //     }
-    // }
-    //
-    // pub fn div_scalar(&self, s: f32) -> Self {
-    //     let mut new_storage = self.storage.clone();
-    //     let storage = Arc::make_mut(&mut new_storage);
-    //
-    //     for i in self.offset..self.storage.len() {
-    //         storage[i] /= s;
-    //     }
-    //
-    //     Self {
-    //         storage: new_storage,
-    //         shape: self.shape.clone(),
-    //         strides: self.strides.clone(),
-    //         offset: 0,
-    //     }
-    // }
-    //
-    // pub fn div_scalar_mut(&mut self, s: f32) {
-    //     let storage = Arc::make_mut(&mut self.storage);
-    //
-    //     for i in self.offset..storage.len() {
-    //         storage[i] *= s;
-    //     }
-    // }
-    //
-    // // Entrega uma matriz e um vetor coluna, como no foward z = (W*x + b), onde z é um tensor
-    // // coluna, W uma matriz, x um tensor coluna e b tbm.
-    // pub fn matvec(&self, tensor: &Tensor) -> Self {
-    //     assert_eq!(self.shape.len(), 2, "self is not a matrix");
-    //     assert_eq!(tensor.shape.len(), 1, "tensor is not a vector");
-    //     assert_eq!(
-    //         self.shape[1], tensor.shape[0],
-    //         "The collum of the matrix is different of the rows of the vector"
-    //     );
-    //
-    //     let mut new_tensor = Tensor::zeros(vec![self.shape[0]]);
-    //
-    //     for i in 0..self.shape[0] {
-    //         for j in 0..self.shape[1] {
-    //             new_tensor.set(
-    //                 &[i],
-    //                 new_tensor.get(&[i]) + self.get(&[i, j]) * tensor.get(&[j]),
-    //             );
-    //         }
-    //     }
-    //
-    //     new_tensor
-    // }
-    //
-    // pub fn outer(&self, tensor: &Tensor) -> Self {
-    //     assert_eq!(self.shape.len(), 1, "self doesn't have 1 dimension");
-    //     assert_eq!(tensor.shape.len(), 1, "self doesn't have 1 dimension");
-    //
-    //     let mut new_tensor = Tensor::zeros(vec![self.shape[0], tensor.shape[0]]);
-    //
-    //     for i in 0..self.shape[0] {
-    //         for j in 0..tensor.shape[0] {
-    //             new_tensor.set(&[i, j], self.get(&[i]) * tensor.get(&[j]));
-    //         }
-    //     }
-    //
-    //     new_tensor
-    // }
-    //
-    // fn map(&self, f: fn(f32) -> f32) -> Tensor {
-    //     let mut new_tensor = Tensor::zeros(self.shape.clone());
-    //
-    //     for i in 0..self.storage.len() {
-    //         new_tensor.storage[i] = f(self.get(i));
-    //     }
-    //
-    //     for i in self.storage() {}
-    //
-    //     new_tensor
-    // }
-    //
-    // fn map_mut(&mut self, f: fn(f32) -> f32) {
-    //     todo!("Ain't done yet!");
-    // }
+    pub fn sum(&self) -> f32 {
+        let mut out = 0.0;
+        let mut idx = vec![0usize; self.shape.len()];
+        for _ in 0..self.numel() {
+            out += self.get(&idx);
+            Self::step_logical(&self.shape, &mut idx);
+        }
+        out
+    }
+    pub fn outer(&self, other: &Self) -> Self {
+        assert_eq!(self.shape.len(), 1);
+        assert_eq!(other.shape.len(), 1);
+
+        let mut out = Tensor::zeros(vec![self.shape[0], other.shape[0]], self.dtype());
+        for i in 0..self.numel() {
+            for j in 0..other.numel() {
+                out.set(&[i, j], self.get(&[i]) * other.get(&[j]));
+            }
+        }
+        out
+    }
+    pub fn matvec(&self, other: &Self) -> Self {
+        assert_eq!(self.shape.len(), 2);
+        assert_eq!(other.shape.len(), 1);
+        assert_eq!(self.shape[1], other.shape[0]);
+        let mut out = Tensor::zeros(vec![self.shape[0]], self.dtype());
+        let mut acc;
+        for i in 0..self.shape[0] {
+            acc = 0.0;
+            for j in 0..self.shape[1] {
+                acc += self.get(&[i, j]) * other.get(&[j]);
+            }
+            out.set(&[i], acc);
+        }
+        out
+    }
+    pub fn matmul(&self, other: &Self) -> Self {
+        assert_eq!(self.shape.len(), 2);
+        assert_eq!(other.shape.len(), 2);
+        assert_eq!(self.shape[1], other.shape[0]);
+        let mut out = Tensor::zeros(vec![self.shape[0], other.shape[1]], self.dtype());
+        let mut acc;
+        for k in 0..other.shape[1] {
+            for i in 0..self.shape[0] {
+                acc = 0.0;
+                for j in 0..self.shape[1] {
+                    acc += self.get(&[i, j]) * other.get(&[j, k]);
+                }
+                out.set(&[i, k], acc);
+            }
+        }
+        out
+    }
 }
