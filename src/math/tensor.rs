@@ -37,13 +37,16 @@ impl Tensor {
             offset,
         }
     }
+
     pub fn from_vec(data: Vec<f32>, shape: Vec<usize>) -> Self {
         assert_eq!(data.len(), shape.iter().product(), "");
         Self::new(Storage::F32(Arc::new(data)), shape)
     }
+
     pub fn from_slice(data: &[f32], shape: Vec<usize>) -> Self {
         Self::from_vec(data.to_vec(), shape)
     }
+
     fn contiguous_strides(shape: &[usize]) -> Vec<usize> {
         let mut strides = vec![0; shape.len()];
         let mut actual_stride = 1;
@@ -54,7 +57,9 @@ impl Tensor {
         strides
     }
 
-    fn step_logical(shape: &Vec<usize>, v: &mut Vec<usize>) {
+    pub fn step_logical(shape: &Vec<usize>, v: &mut Vec<usize>) {
+        assert_eq!(shape.len(), 0, "Vector size can't be zero");
+
         v[shape.len() - 1] += 1;
 
         let mut i = shape.len() - 1;
@@ -141,6 +146,7 @@ impl Tensor {
             Storage::T3 { .. } => panic!(),
         }
     }
+
     pub fn set(&mut self, index: &[usize], value: f32) {
         let idx = self.storage_index(index);
         let storage = match &mut self.storage {
@@ -150,6 +156,7 @@ impl Tensor {
         };
         storage[idx] = value;
     }
+
     pub fn shape(&self) -> &[usize] {
         &self.shape
     }
@@ -180,6 +187,7 @@ impl Tensor {
             Storage::T3 { .. } => panic!(),
         }
     }
+
     pub fn transpose_mut(&mut self, dim0: usize, dim1: usize) {
         assert!(
             dim0 < self.shape.len() && dim1 < self.shape.len(),
@@ -189,6 +197,7 @@ impl Tensor {
         self.shape.swap(dim0, dim1);
         self.strides.swap(dim0, dim1);
     }
+
     pub fn transpose(&self, dim0: usize, dim1: usize) -> Self {
         assert!(
             dim0 < self.shape.len() && dim1 < self.shape.len(),
@@ -208,6 +217,7 @@ impl Tensor {
             offset: self.offset,
         }
     }
+
     pub fn add(&self, other: &Self) -> Self {
         assert_eq!(self.shape, other.shape, "");
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
@@ -218,6 +228,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn add_mut(&mut self, other: &Self) {
         assert_eq!(self.shape, other.shape, "");
         let mut idx = vec![0usize; self.shape.len()];
@@ -226,6 +237,7 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
+
     pub fn sub(&self, other: &Self) -> Self {
         assert_eq!(self.shape, other.shape, "");
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
@@ -236,6 +248,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn sub_mut(&mut self, other: &Self) {
         assert_eq!(self.shape, other.shape, "");
         let mut idx = vec![0usize; self.shape.len()];
@@ -244,6 +257,7 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
+
     pub fn mul(&self, other: &Self) -> Self {
         assert_eq!(self.shape, other.shape, "");
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
@@ -254,6 +268,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn mul_mut(&mut self, other: &Self) {
         assert_eq!(self.shape, other.shape, "");
         let mut idx = vec![0usize; self.shape.len()];
@@ -262,6 +277,7 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
+
     pub fn div(&self, other: &Self) -> Self {
         assert_eq!(self.shape, other.shape, "");
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
@@ -272,6 +288,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn div_mut(&mut self, other: &Self) {
         assert_eq!(self.shape, other.shape, "");
         let mut idx = vec![0usize; self.shape.len()];
@@ -280,6 +297,7 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
+
     pub fn mul_scalar(&self, s: f32) -> Self {
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
         let mut idx = vec![0usize; self.shape.len()];
@@ -289,6 +307,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn mul_scalar_mut(&mut self, s: f32) {
         let mut idx = vec![0usize; self.shape.len()];
         for _ in 0..self.numel() {
@@ -296,7 +315,9 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
+
     pub fn div_scalar(&self, s: f32) -> Self {
+        assert!(s != 0.0);
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
         let mut idx = vec![0usize; self.shape.len()];
         for _ in 0..self.numel() {
@@ -305,6 +326,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn div_scalar_mut(&mut self, s: f32) {
         let mut idx = vec![0usize; self.shape.len()];
         for _ in 0..self.numel() {
@@ -312,6 +334,7 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
+
     pub fn map(&self, f: impl Fn(f32) -> f32) -> Self {
         let mut out = Tensor::zeros(self.shape.clone(), self.dtype());
         let mut idx = vec![0usize; self.shape.len()];
@@ -321,6 +344,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn map_mut(&mut self, f: impl Fn(f32) -> f32) {
         let mut idx = vec![0usize; self.shape.len()];
         for _ in 0..self.numel() {
@@ -328,6 +352,7 @@ impl Tensor {
             Self::step_logical(&self.shape, &mut idx);
         }
     }
+
     pub fn sum(&self) -> f32 {
         let mut out = 0.0;
         let mut idx = vec![0usize; self.shape.len()];
@@ -337,6 +362,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn outer(&self, other: &Self) -> Self {
         assert_eq!(self.shape.len(), 1);
         assert_eq!(other.shape.len(), 1);
@@ -349,6 +375,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn matvec(&self, other: &Self) -> Self {
         assert_eq!(self.shape.len(), 2);
         assert_eq!(other.shape.len(), 1);
@@ -364,6 +391,7 @@ impl Tensor {
         }
         out
     }
+
     pub fn matmul(&self, other: &Self) -> Self {
         assert_eq!(self.shape.len(), 2);
         assert_eq!(other.shape.len(), 2);
