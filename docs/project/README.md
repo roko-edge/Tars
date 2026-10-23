@@ -11,7 +11,7 @@ library and do not establish that planned features are implemented.
 | Objective | Document | Purpose |
 |---|---|---|
 | Inspect implementation progress | [`STATUS.md`](STATUS.md) | Snapshot of components, commands, and limitations |
-| Review planned work and ownership | [`ROADMAP.md`](ROADMAP.md) | Milestones, responsibilities, and completion gates |
+| Review planned work and ownership | [`ROADMAP.md`](ROADMAP.md) | Milestones, responsibilities, current assignments, and completion gates |
 | Review the tensor core delivery plan | [`TENSOR_PHASE_B.md`](TENSOR_PHASE_B.md) | Work packages, defect backlog, and test matrix for the tensor core |
 | Review the v0.1.0 target | [`V0_CONTRACT.md`](V0_CONTRACT.md) | Release acceptance criteria and future capabilities |
 | Organize research evidence | [`research/README.md`](research/README.md) | Research-log and publication process |
