@@ -34,8 +34,10 @@ public modules.
 | `experiment_type` | `ExperimentType` | Identifier printed when the run starts |
 
 Each experiment exposes `pub fn train() -> Train`. Calling it constructs a fresh
-model and dataset; it does not execute training. Linear layers initialize weights and
-biases to zero through `Linear::zeros`.
+model and dataset; it does not execute training. `Sequential::linear` constructs
+layers through `Linear::random`: weights are drawn from the unseeded global
+generator and biases initialize to zero. Two runs of the same configuration are not
+reproducible.
 
 `ExperimentType` is a Rust enum deriving `Debug` and `Clone`, with variants `Or` and
 `Xor`. It identifies the configuration for logging. It does not select a factory,
@@ -87,7 +89,7 @@ Experiment factory -> Train -> Initial MSE
                      (repeat for every epoch)
                                |
                                v
-                 Print predictions -> Build NetGraph
+                  Print predictions -> Graph artifacts
 ```
 
 1. Print the experiment identifier and calculate the initial mean squared error
@@ -106,8 +108,10 @@ Experiment factory -> Train -> Initial MSE
    Outputs remain floating-point predictions; the executable does not threshold
    them into binary labels or calculate classification accuracy.
 7. Create a `NetGraph` and call `network_to_graph` with the trained model and the
-   first sample's input. This builds neurons and weighted edges in memory. It does
-   not save DOT or render a PNG; activation modules are skipped by graph extraction.
+   first sample's input. This extracts the neurons and weighted edges, writes
+   `src/view/artifacts/graph.dot`, and renders `src/view/artifacts/network.png`
+   through Graphviz. Activation modules are skipped by graph extraction, and the
+   artifacts directory must already exist.
 
 The loop uses analytical backpropagation (`backward`). The numerical
 finite-difference helper `num_grad` remains available but is not used by `main`.
@@ -115,10 +119,11 @@ Training runs for the configured epoch count without early stopping.
 
 ## Exports and constraints
 
-Calls to `export_model` and `export_data` are active in `main`. A normal run from the
-repository root overwrites `npu/data/weights.mem`, `npu/data/bias.mem`,
-`npu/data/activations.mem`, and `npu/data/target.mem`. These are the same files the
-NPU testbench reads when running `make sim`.
+The calls to `export_model` and `export_data` are commented out in
+`src/bin/main.rs`. A normal run does not write the files under `npu/data/`; the
+checked-in artifacts remain from an earlier export and are the ones the NPU
+testbench reads when running `make sim`. For the artifact-writing behavior that does
+run at the end of `main`, see [`VISUALIZATION.md`](VISUALIZATION.md).
 
 Configurations must provide a nonempty dataset because graph extraction accesses
 `train.dataset[0]`. Inputs, targets, and layer dimensions must be consistent; the

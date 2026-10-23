@@ -14,8 +14,9 @@ visualization requirements, and research logging protocol for TARS Release v0.1.
 
 - **Input Dimension:** 784 features ($28 \times 28$ normalized grayscale pixels).
 - **Output Dimension:** 10 classes ($0$ through $9$ softmax/one-hot logits).
-- **Target Accuracy:** $\ge 95\%$ classification accuracy on the MNIST validation set in Rust simulation.
-- **Hardware Target:** Full inference of the trained MNIST model executing on the SystemVerilog NPU with bit-exact numeric parity.
+- **Target Accuracy (f32 reference):** $\ge 95\%$ classification accuracy on the MNIST validation set for the floating-point model in Rust simulation.
+- **Target Accuracy (ternary release gate):** $> 90\%$ for the ternary-quantized model, measured on the bit-exact inference path (identical to the NPU output by parity), reported with a 95% binomial confidence interval. The 90% threshold is pre-registered by this contract before any measurement.
+- **Hardware Target:** Full inference of the trained and ternary-quantized MNIST model executing on the SystemVerilog NPU with bit-exact numeric parity.
 
 ---
 
@@ -37,9 +38,11 @@ tars/
 │   └── view/                    # Graphviz topology & node activation visualization
 ```
 
+The `model/` container is deferred until a non-sequential topology exists (Section 6.1 and [`engineering/specs/MODEL_TRAIT.md`](../engineering/specs/MODEL_TRAIT.md)); manifest extraction is served by `Sequential` in the interim.
+
 ### 2.1 Complete Tensor Engine (`src/math/tensor.rs`)
 - Full N-dimensional contiguous and strided `Tensor` implementation with `Arc` storage.
-- Explicit data type representation via `DType` enum (`F32`, `Q8_24`, `Ternary`).
+- Explicit data type representation via `DType` enum (`F32`, `I8`, `T3`), matching [`engineering/specs/TENSOR.md`](../engineering/specs/TENSOR.md). Q8.24 is strictly a serialization format of the exporter and is not a tensor `DType`. The `I8` variant is deferred beyond v0.1.0.
 - Zero-copy view transformations: `slice`, `transpose`, `reshape`, `permute`.
 - Multidimensional NumPy-compliant broadcasting.
 - High-performance row-major matrix multiplication (`matmul`) for float tensors, and mixed-precision matrix multiplication for ternary weight tensors.
@@ -50,17 +53,20 @@ tars/
 - **Q8.24 Fixed-Point Engine:** Quantization of continuous floats into signed 32-bit Q8.24 integers.
 - **Ternary Quantization Engine ($\{-1, 0, +1\}$):** Weight quantization mapping parameters to ternary states $\{-W_0, 0, +W_0\}$ with scaling factor $W_0$.
 - **Ternary Compute Operations:** Tensor-level mixed-precision dot products reducing continuous/fixed-point activations against ternary weights via conditional add/sub/zero accumulation.
-- **Quantization-Aware Export:** Export pipeline emitting layer manifests, Q8.24 files (`weights.mem`, `bias.mem`), and ternary codebook parameters.
+- **Training Modes:** Training operates on latent `F32` master weights in all modes. The ternary training mode is quantization-aware: the forward pass evaluates against the quantized weight representation and the backward pass applies the straight-through estimator to the quantizer. Integer-only training is out of scope for v0.1.0.
+- **Quantization-Aware Export:** Export pipeline emitting the layer manifest, dense ternary weight memories (`wt.mem`), per-layer scale parameters (`w0.mem`), and the layer program (`program.mem`), per LOG-007, Section 4.2, Step 1. The legacy Q8.24 artifacts (`weights.mem`, `bias.mem`) remain the development-substrate export.
 
 ### 2.3 Respective NPU Hardware (`npu/`)
 - Multi-cycle **Layer Engine FSM** in SystemVerilog capable of processing $784 \to H \to 10$ layer shapes.
-- Configurable arithmetic mode supporting both **32-bit Q8.24 MAC** and **Ternary Multiply-Accumulate** operations.
+- **Ternary-only release engine:** 2-bit dense ternary weights with conditional add/sub/zero accumulation, a Q8.24 activation substrate, and the per-layer scale $W_0$ applied in the epilogue before the bias. The dense Q8.24 weight mode is not implemented in the release engine; the existing single-layer Q8.24 prototype remains as the development substrate and as the synthesis baseline for resource and energy comparisons (maintainer decision, October 2026).
+- Layer-descriptor modes are reserved: `mode = 0` (dense Q8.24, unused), `mode = 1` (dense ternary, release), `mode = 2` (zero-skipping, v0.2.0), `mode = 3` (int8, future phase).
 - 64-bit saturating accumulator to prevent overflow during 784-element dot products.
 - Self-checking simulation testbench (`tb.sv`) verifying NPU execution against Rust golden vectors with $0$ bit errors.
 
 ### 2.4 Tensorized Analytical Backpropagation
-- Pure tensor-based automatic gradient computation (`backward()`), eliminating all `Vec<Vec<f32>>` allocations.
-- Dual-mode verification: `num_grad` (finite differences) executes in regression test suites to guarantee analytical gradient correctness.
+- Pure tensor-based **analytical** gradient computation (`backward()`), eliminating all `Vec<Vec<f32>>` allocations. Each `Module` implements its own `backward` under the composite trait contract; no operation-graph autodiff engine is included in v0.1.0 (deferred to v1.0+, Section 5).
+- Quantizer gradients follow the straight-through estimator; the numerical gradient check (`num_grad`) applies to the `F32` graph with quantizers disabled.
+- Dual-mode verification: `num_grad` (finite differences) executes in regression test suites to guarantee analytical gradient correctness on the `F32` path.
 
 ---
 
@@ -111,3 +117,30 @@ To ensure v0.1.0 abstractions seamlessly scale to CNNs, Closed-Form Continuous (
 1. **Graph Agnosticism:** The `Module` trait must enforce `forward(&self, input: &Tensor) -> Tensor` without assuming 1D or 2D vector shapes.
 2. **Tensor Dimensionality:** `Tensor` must support arbitrary rank $N \ge 1$ (e.g., $B \times C \times H \times W$ for CNNs, $B \times T \times D$ for sequence/CfC networks).
 3. **Intermediate Representation (IR):** The `HardwareManifest` exported by `Model` must represent layers as a directed acyclic graph (DAG) of tensor operations, not hard-coded linear chains.
+
+---
+
+## 6. Release Boundaries and Terminology
+
+### 6.1 Version Boundaries
+
+| Version | Scope |
+|---|---|
+| **v0.1.0** | MNIST with the f32 reference model ($\ge 95\%$) and the ternary release gate ($> 90\%$ on the bit-exact path); ternary-only NPU engine with bit-exact parity; exporter formats: Q8.24 serialization and dense ternary (`mode = 1`); visualization (Section 3) and research logging (Section 4). |
+| **v0.2.0** | `mode = 2` zero-skipping ternary inference ([`research/LOG-006`](research/LOG-006-ternary_zero_skipping_encoding.md)), admitted under the compatibility rules of LOG-007, Section 2.4. The int8 (`I8`/`mode = 3`) capability may enter this phase. |
+| **v1.0+** | Architectural expansion era (Section 5): CNNs, CfC networks, Neural ODEs, DAG topologies, arbitrary-rank tensors, and an operation-level autodiff engine. |
+
+The optimizer of record for v0.1.0 is BGD; Adam is admissible but is not required by any gate.
+
+### 6.2 Terminology
+
+| Term | Meaning |
+|---|---|
+| Training mode | `F32` training or quantization-aware ternary training; both operate on latent `F32` master weights |
+| Storage `DType` | `F32`, `I8`, `T3` (`I8` deferred beyond v0.1.0) |
+| Export format | Q8.24 words or dense ternary words written under `npu/data/` from the layer manifest |
+| NPU mode | Layer-descriptor field: 0 (dense Q8.24, reserved), 1 (dense ternary, release), 2 (zero-skipping, v0.2.0), 3 (int8, future) |
+
+### 6.3 Research Claim Discipline
+
+Published results must separate measured values, tool-derived estimates, and cited constants. Accuracy claims carry a 95% binomial confidence interval over the MNIST validation set and a paired comparison (McNemar) between the f32 and ternary classifiers over identical inputs. Energy figures are estimates: exact operation counts and cycle counts from simulation, synthesis reports under a declared flow, and per-operation energy classes cited from the literature. Cycle-count parity between dense modes must not be presented as a latency advantage of ternary inference; the latency claim belongs to zero-skipping in v0.2.0.

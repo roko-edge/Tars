@@ -106,9 +106,13 @@ configuration is needed inside the Vivado environment.
 
 ---
 
-## 7. Known Limitation
+## 7. Known Limitations
 
 The NPU memories (`b`, `w`, `a`) are populated only by the simulation testbench
 through hierarchical references. Hardware builds do not load weights until the core
 provides synthesis-time initialization; on-board inference results are undefined
 until that initialization is added to the NPU sources by the maintainers.
+
+The activation unit implements ReLU only. Selecting sigmoid (`activation = 2`) routes
+the saturated sum unchanged, so the sigmoid output layer of the built-in experiments
+has no hardware equivalent under the current sources.

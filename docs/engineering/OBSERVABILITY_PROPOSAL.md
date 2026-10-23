@@ -45,9 +45,9 @@ user-interface development.
 
 ## Phase 1: Model Graph Extraction
 
-The current visualization prototype in `src/bin/visualization.rs` constructs an
-unconnected graph with hard-coded node indices (`h0..h5`). Phase 1 connects `NetGraph`
-directly to `Sequential`.
+The visualization pipeline in `src/view/graph.rs` extracts topology from a
+`Sequential` model through `network_to_graph`. Phase 1 of this proposal generalizes
+that extraction into the telemetry topology export described below.
 
 ### Interface additions
 

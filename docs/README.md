@@ -15,6 +15,7 @@ presence in this repository does not imply that a feature is available.
 | Prepare the environment and run TARS | [`GETTING_STARTED.md`](GETTING_STARTED.md) | Requirements, commands, current behavior, and operational limitations |
 | Run the OR or XOR configurations | [`EXPERIMENTS.md`](EXPERIMENTS.md) | Experiment factories, training flow, outputs, and manual selection |
 | Inspect the current public surface | [`API.md`](API.md) | Implemented modules, operations, and stability boundaries |
+| Generate network diagrams | [`VISUALIZATION.md`](VISUALIZATION.md) | Graph extraction, DOT export, Graphviz rendering, and manual graph construction |
 | Simulate the NPU prototype | [`../npu/README.md`](../npu/README.md) | Hardware environment, Make targets, and current simulation behavior |
 
 ---

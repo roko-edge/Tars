@@ -2,9 +2,8 @@
 
 **Document type:** Project research process and publication planning.
 
-This directory is reserved for empirical research logs, mathematical derivations,
-hardware/software co-design trade-offs, and experimental benchmarks for TARS. No
-numbered research log is currently present.
+This directory holds empirical research logs, mathematical derivations,
+hardware/software co-design trade-offs, and experimental benchmarks for TARS.
 
 The contents of this directory serve as the primary source material for compiling academic publications on TARS (e.g., hardware-efficient NPU acceleration, ternary quantization loss bounds, and bit-exact co-simulation).
 
@@ -15,6 +14,21 @@ The contents of this directory serve as the primary source material for compilin
 | ID | Planned title | Domain | State |
 |---|---|---|---|
 | `LOG-000` | Research Logging Protocol and Paper Outline | Methodology | Planned |
+| `LOG-001` | Zero-Copy Strided Tensor Engine | Software tensor runtime | Planned |
+| `LOG-002` | Q8.24 vs. Ternary Loss Bounds | Quantization | Planned |
+| `LOG-003` | Layer Engine FSM and Accumulator Width | Hardware | Planned |
+| `LOG-004` | Accuracy vs. Quantization Bit-Width | Benchmark | Planned |
+| `LOG-005` | Extension to CNNs and CfC Networks | Future work | Planned |
+| `LOG-006` | Ternary Zero-Skipping Weight Encoding | Hardware and quantization | Accepted design; scheduled for v0.2.0 |
+| `LOG-007` | v0 Execution-Mode Phasing and Implementation Sequence | Hardware and release plan | Accepted maintainer position |
+| `LOG-008` | NPU Resource and Energy Measurement Protocol | Hardware benchmark methodology | Planned |
+
+Supporting analyses:
+
+| Document | Scope | State |
+|---|---|---|
+| [`Glorot_Bengio_2010_Summary.md`](Glorot_Bengio_2010_Summary.md) | Summary of Glorot and Bengio (2010) and its relation to the TARS initialization functions | Complete |
+| [`Xavier_Analysis.md`](Xavier_Analysis.md) | Notes on weight initialization | One-line draft stub |
 
 ---
 

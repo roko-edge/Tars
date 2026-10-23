@@ -39,9 +39,9 @@ nix develop .#rust      # Rust and visualization tools
 nix develop .#hardware  # Icarus Verilog, Verilator, GTKWave, and Verible
 ```
 
-Without Nix, install a Rust 2024 toolchain and the system dependencies required by
-`plotters`. Graphviz is required by the visualization prototype. The NPU commands
-require GNU Make, Icarus Verilog, Verilator, and GTKWave as applicable.
+Without Nix, install a Rust 2024 toolchain and Graphviz. The package depends on
+`rand`, `petgraph`, and `yaml-rust2`. The NPU commands require GNU Make, Icarus
+Verilog, Verilator, and GTKWave as applicable.
 
 ## Rust
 
@@ -52,16 +52,23 @@ cargo run --bin visualization
 cargo test
 ```
 
-`main` runs the OR experiment selected in source, trains the model, prints its
-predictions, and overwrites the four `.mem` files under `npu/data/`. There is no
-runtime experiment selector, and the export does not contain model topology.
+`main` runs the OR experiment selected in source, trains the model, and prints its
+predictions. The export calls that would write the four `.mem` files under `npu/data/`
+are commented out in the source, so a run does not modify the checked-in artifacts.
+The binary then extracts the network topology and writes `src/view/artifacts/graph.dot`
+and `src/view/artifacts/network.png` through Graphviz; the directory is not created
+automatically and is absent in a fresh clone, so the run terminates with a file error
+after the predictions are printed. There is no runtime experiment selector.
 
 `visualization` writes `src/view/artifacts/graph.dot` and invokes Graphviz to create
 `src/view/artifacts/network.png`. It renders its own hard-coded model rather than the
-model trained by `main`.
+model trained by `main`. Both binaries require a pre-existing writable
+`src/view/artifacts/` directory and a Graphviz `dot` executable on `PATH`.
 
-The active Rust tests cover the PRNG and Xavier initialization. Tensor tests are
-currently commented out.
+The active Rust tests cover the PRNG, Xavier initialization, the ternary distribution,
+and one tensor contiguity case. The suite is not deterministic: the distribution tests
+sample the unseeded global generator, and the ternary-distribution test asserts a
+variance bound at the true value of its distribution, so it fails intermittently.
 
 ## SystemVerilog
 
@@ -89,3 +96,14 @@ See [`docs/README.md`](docs/README.md) for user documentation and navigation by 
 | [`docs/project/ROADMAP.md`](docs/project/ROADMAP.md) | Project milestones and ownership |
 | [`docs/project/STATUS.md`](docs/project/STATUS.md) | Current implementation state and known limitations |
 | [`AGENTS.md`](AGENTS.md) | Repository automation policy for AI tools |
+
+## Licensing
+
+Copyright (c) 2026 The TARS Authors.
+
+The Rust package, the SystemVerilog NPU prototype, and this documentation are
+distributed under the Apache License, Version 2.0. The license text is available in
+the [`LICENSE`](LICENSE) file and the authorship record in the
+[`AUTHORS`](AUTHORS) file. The project is developed as a research initiative of the
+Universidade Federal do Cariri (UFCA). Commercial licensing terms may be obtained
+from the authors.

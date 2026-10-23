@@ -176,21 +176,21 @@ premature optimization, the tensor core must provide strictly the following meth
 | | `offset(&self) -> usize` | Returns physical offset | Implemented |
 | | `numel(&self) -> usize` | Computes logical product $\prod \text{shape}[i]$ | Implemented |
 | | `is_contiguous(&self) -> bool` | Validates the contiguity definition of Section 2.2, Invariant 4 | Partial |
-| | `dtype(&self) -> DType` | Returns copyable data type discriminant | Implemented |
+| | `dtype(&self) -> DType` | Returns copyable data type discriminant | Partial |
 | **Element Access** | `get(&self, &[usize]) -> f32` | Logical view: dequantizes value to `f32` for generic consumption | Partial |
 | | `set(&mut self, &[usize], f32)` | Mutates storage in-place via `Arc::make_mut` (COW) | Partial |
-| **Views & Memory** | `transpose(&self, usize, usize) -> Self` | Zero-copy axis swap modifying `shape` and `strides` | Implemented |
+| **Views & Memory** | `transpose(&self, usize, usize) -> Self` | Zero-copy axis swap modifying `shape` and `strides` | Partial |
 | | `transpose_mut(&mut self, usize, usize)` | In-place axis swap of `shape` and `strides`; alters metadata only and does not mutate the storage buffer | Partial |
-| | `contiguous(&self) -> Self` | Returns a tensor whose strides are canonical row-major and whose physical offset is zero; shares the source storage when the source already satisfies Section 2.2, Invariant 4, and re-packs the elements by coordinate mapping otherwise | Not implemented |
-| **Linear Algebra** | `matmul(&self, &Tensor) -> Self` | Computes 2D matrix multiplication ($[M, K] \times [K, N] \to [M, N]$) with specialized ternary fast-path | Not implemented |
-| | `matvec(&self, &Tensor) -> Self` | Multiplies matrix $[M, K]$ by vector $[K]$ | Not implemented |
-| | `outer(&self, &Tensor) -> Self` | Outer product of 1D vectors $[M] \times [N] \to [M, N]$ | Not implemented |
-| **Element-wise** | `add(&self, &Tensor) -> Self` | Pointwise logical addition respecting strides | Not implemented |
-| | `sub(&self, &Tensor) -> Self` | Pointwise logical subtraction respecting strides | Not implemented |
-| | `mul_scalar(&self, f32) -> Self` | Pointwise scalar multiplication | Not implemented |
-| | `div_scalar(&self, f32) -> Self` | Pointwise scalar division | Not implemented |
-| | `map(&self, F) -> Self` | Applies a scalar function to logical elements, where $F$ is any callable over `f32` that may capture state | Not implemented |
-| | `sum(&self) -> f32` | Full reduction across all logical coordinates | Not implemented |
+| | `contiguous(&self) -> Self` | Returns a tensor whose strides are canonical row-major and whose physical offset is zero; shares the source storage when the source already satisfies Section 2.2, Invariant 4, and re-packs the elements by coordinate mapping otherwise | Partial |
+| **Linear Algebra** | `matmul(&self, &Tensor) -> Self` | Computes 2D matrix multiplication ($[M, K] \times [K, N] \to [M, N]$) with specialized ternary fast-path | Partial |
+| | `matvec(&self, &Tensor) -> Self` | Multiplies matrix $[M, K]$ by vector $[K]$ | Partial |
+| | `outer(&self, &Tensor) -> Self` | Outer product of 1D vectors $[M] \times [N] \to [M, N]$ | Partial |
+| **Element-wise** | `add(&self, &Tensor) -> Self` | Pointwise logical addition respecting strides | Partial |
+| | `sub(&self, &Tensor) -> Self` | Pointwise logical subtraction respecting strides | Partial |
+| | `mul_scalar(&self, f32) -> Self` | Pointwise scalar multiplication | Partial |
+| | `div_scalar(&self, f32) -> Self` | Pointwise scalar division | Partial |
+| | `map(&self, F) -> Self` | Applies a scalar function to logical elements, where $F$ is any callable over `f32` that may capture state | Partial |
+| | `sum(&self) -> f32` | Full reduction across all logical coordinates | Partial |
 
 #### 4.0.1 Gap Notes
 - `new` does not yet validate the element capacity of the supplied storage against the shape product, as required by Section 2.2, Invariant 5.
@@ -198,7 +198,9 @@ premature optimization, the tensor core must provide strictly the following meth
 - `get` and `set` are restricted to the `F32` variant. Access on `I8` and `T3` storage is a precondition violation under Section 4.1, and is not a silent no-operation.
 - `is_contiguous` couples a geometric predicate to the storage variant: it terminates the operation on `I8` and `T3` storage without a diagnostic that names the violated precondition, which is contrary to Section 4.1. It also applies a third clause, a non-empty backing buffer, which is not part of the definition of Section 2.2, Invariant 4.
 - The in-place axis swap alters the shape and stride vectors only. It does not write to the storage buffer and therefore does not trigger the buffer duplication of Section 5. Its diagnostic, shared with the non-in-place variant, is not yet worded according to the policy of Section 4.1, and the operation has no test coverage.
-- The stride computation that establishes canonical row-major strides carries an identifier distinct from the public `contiguous` operation of this table, so the two entities coexist without collision. The public operation itself is absent; the internal re-packing helper is unreachable from outside the module and is reported as unused by the compiler.
+- The stride computation that establishes canonical row-major strides carries an identifier distinct from the re-packing operation, so the two entities coexist without collision. The re-packing operation is delivered under the identifier `make_contiguous`; its reconciliation with the `contiguous` name of this table remains open. The operation has no test coverage.
+- The element-wise kernels and the products are implemented over `F32` and honour the stride vectors of their operands. Their shape and dimension preconditions are reported through default assertion text or empty diagnostics that do not name the violated precondition; `div_scalar` does not reject a zero divisor; `map` accepts non-mutating callables only; the kernels and the products have no test coverage.
+- The full reduction `sum` is implemented and honours the stride vector. It terminates on a rank-zero operand through the logical iteration helper (defect D-06 of the delivery plan) and has no test coverage.
 
 ### 4.1 Preconditions and Error Policy
 The tensor core reports precondition violations by terminating the operation with a
@@ -230,7 +232,7 @@ below partition the surface and state the exit condition of each.
 | Phase | Scope | Exit Condition |
 |---|---|---|
 | **Current: F32 core** | Constructors, geometry accessors, element access over `F32`, the axis swap in both variants, `contiguous`, the element-wise kernels (`add`, `sub`, `mul_scalar`, `div_scalar`, `map`), `sum`, the products `matmul`, `matvec`, `outer` over `F32`, and the bulk access surface | Every operation of the phase satisfies Section 4.1 and is covered by the tensor test suite |
-| **Subsequent: packed variants** | Element access over `I8` and `T3`, dequantization of Section 3.1 and Section 3.3, the ternary fast path of Section 3.2, and the alignment constraint of Section 2.2, Invariant 7 | Packed round trips and dequantized values are covered by the tensor test suite |
+| **Subsequent: packed variants** | Element access over `T3` (within the v0.1.0 arc), the ternary dequantization of Section 3.1, the ternary fast path of Section 3.2, and the alignment constraint of Section 2.2, Invariant 7. The `I8` variant and the scaling of Section 3.3 are deferred beyond v0.1.0 (maintainer decision, October 2026) | Packed round trips and dequantized values are covered by the tensor test suite |
 | **Deferred** | Reductions along arbitrary axes, `mean`, `slice`, `permute`, `reshape`, and multidimensional broadcasting | Each deferred operation receives its own contract in this specification before implementation |
 
 The deferral of axis reductions and of the view and broadcasting operations is

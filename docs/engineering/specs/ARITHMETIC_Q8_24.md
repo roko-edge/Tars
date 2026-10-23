@@ -1,7 +1,11 @@
 # Specification: Q8.24 Fixed-Point Arithmetic and Bit-Exact Parity
 
 **Status:** Target contract with current deviations identified in Sections 2.2 and
-3.3. It does not claim that automated parity verification is implemented.
+3.3. It does not claim that automated parity verification is implemented. The
+release NPU executes dense ternary weights over the Q8.24 activation substrate;
+the ternary arithmetic and epilogue are specified in
+[`LOG-007`](../../project/research/LOG-007-v0_execution_mode_phasing.md), Section
+2.2 (pending sign-off).
 
 This document specifies the shared numeric contract between the Rust training runtime
 and the SystemVerilog NPU. Compliance is mandatory for bit-exact hardware parity.

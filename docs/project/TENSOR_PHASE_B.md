@@ -42,6 +42,20 @@ The phase is complete when every clause of the following holds:
 | The tensor core is consumed outside its own module | Not satisfied; no other module constructs a tensor, so no downstream regression constrains the redesign |
 | The linear layer, the optimizer, and the exporter use nested vectors | Satisfied; the migration is the objective of the later phase |
 
+### 2.1 Delivery State (October 2026)
+
+The surface of WP-02, WP-06, WP-07, WP-08, and WP-09 is present in the repository. A
+package closes only when its acceptance criteria are verified by the test suite,
+which does not yet exist in the required scope, so the delivered packages remain open
+in the milestone sense.
+
+| Packages | State |
+|---|---|
+| WP-02 | Closed |
+| WP-06, WP-07, WP-08, WP-09 | Implemented; pending verification by the test suite |
+| WP-04, WP-05 | Partially implemented; the addressing remains variant-coupled and the view contract clauses are open |
+| WP-01, WP-03, WP-10, WP-11, WP-12, WP-13 | Open |
+
 ---
 
 ## 3. Work Package Decomposition
@@ -206,7 +220,7 @@ recorded here because the work of the current phase constrains its design.
 
 | Field | Content |
 |---|---|
-| Objective | Deliver the element access over the `I8` and `T3` variants, the dequantization of Sections 3.1 and 3.3, and the ternary evaluation of Section 3.2 |
+| Objective | Deliver the element access over the `T3` variant, the ternary dequantization of Section 3.1, and the ternary evaluation of Section 3.2; the `I8` variant and the scaling of Section 3.3 are deferred beyond v0.1.0 (maintainer decision, October 2026) |
 | Deliverables | The packed variants answer element access with a dequantized value; the `I8` scale is multiplicative as defined by Section 3.3; the ternary codes follow the encoding table of Section 3.1, in which the code reserved for an invalid state is never produced and never read; a buffer intended to hold zero-valued trits is materialized with the zero code in every bit pair; the axis swap rejects a ternary result that is not byte-aligned, as required by Section 2.2, Invariant 7 |
 | Acceptance criteria | A packed round trip preserves the encoded state; the dequantized value of a ternary element equals the trit multiplied by the scale; a zero-filled ternary buffer decodes to zero-valued trits; a scale of zero is rejected where the specification requires a non-zero scale |
 | Dependencies | WP-04, WP-11, WP-13, and the closure of the alignment constraint of Section 2.2, Invariant 7 |
@@ -228,7 +242,7 @@ resolves them. The severity follows the impact on the contract of the specificat
 | D-05 | The packed variants are allocated with a degenerate zero scale, contradicting Sections 3.1 and 3.3 | High | WP-14 |
 | D-06 | The logical index iteration underflows on a rank-zero shape | High | WP-10 |
 | D-07 | The constructor does not validate the element capacity against the shape product | Medium | WP-03 |
-| D-08 | The public contiguous operation is absent; the internal helper is unreachable and reports as unused | Medium | WP-02, WP-06 |
+| D-08 | The public contiguous operation is absent; the internal helper is unreachable and reports as unused | Resolved | Closed; the public operation is delivered under the identifier `make_contiguous`; the identifier reconciliation with the specification remains open |
 | D-09 | The relationship between the contiguity predicate, the stride vector, and the physical offset was not stated by the specification | Resolved | Closed; Section 2.2, Invariant 4 of the specification now states the two clauses; the remaining coupling with the storage variant is tracked by D-15 |
 | D-10 | The type tag is neither copyable nor comparable | Low | WP-01 |
 | D-11 | The module imports the panic module and the vector module in forms that are not required | Low | WP-01 |
@@ -236,7 +250,7 @@ resolves them. The severity follows the impact on the contract of the specificat
 | D-13 | The tensor exposes no bulk access surface for the exporter and the graph renderer | Low | WP-12 |
 | D-14 | The axis swap and its in-place variant have no test coverage | Low | WP-05, WP-13 |
 | D-15 | The contiguity check terminates the operation on the packed variants without a diagnostic, contrary to the error policy of Section 4.1 of the specification | High | WP-11, WP-14 |
-| D-16 | The contiguity check reports a tensor whose logical extent is empty as not contiguous | Resolved | Closed by decision; the definition of Section 2.2, Invariant 4 of the specification no longer carries a non-empty extent clause, and the implementation clause is removed under WP-05 |
+| D-16 | The contiguity check reports a tensor whose logical extent is empty as not contiguous | Open | The specification no longer carries a non-empty extent clause; the implementation retains the clause until WP-05 closes |
 
 ---
 
@@ -274,7 +288,7 @@ resolves them. The severity follows the impact on the contract of the specificat
 
 | Item | Reason |
 |---|---|
-| The `I8` and `T3` access paths | Belong to the subsequent phase of Section 4.2 of the specification; recorded as WP-14 |
+| The `I8` and `T3` access paths | The `T3` access path belongs to the v0.1.0 arc and is recorded as WP-14; the `I8` access path is deferred beyond v0.1.0 (maintainer decision, October 2026) |
 | The ternary fast path of the product | Belongs to the subsequent phase; depends on WP-14 |
 | Reductions along arbitrary axes, the mean reduction | Deferred by Section 4.2 of the specification; each requires its own contract clause |
 | `slice`, `permute`, `reshape`, and multidimensional broadcasting | Deferred by Section 4.2 of the specification; each requires its own contract clause |

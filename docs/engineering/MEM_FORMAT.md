@@ -9,9 +9,11 @@ The NPU prototype uses hexadecimal text files accepted by SystemVerilog
 `$readmemh`. Artifacts are generated from the Rust runtime (`src/export.rs`)
 in Q8.24 fixed-point format with truncation.
 
-The exporter and the testbench operate on the same files under `npu/data/`: a training
-run overwrites the checked-in memory files consumed by simulation. The shared encoding
-and paths do not constitute an automated integration path.
+The exporter and the testbench operate on the same files under `npu/data/`. The calls
+to the exporter are commented out in the training binary, so the checked-in files
+consumed by simulation remain from an earlier export and are not overwritten by a
+training run. The shared encoding and paths do not constitute an automated integration
+path.
 
 ## `activations.mem`
 
@@ -60,7 +62,7 @@ The testbench configures the top-level NPU with `IN = 2` and `OUT = 1`. The modu
 
 ## Current Limitations
 
-- **Layer Manifest:** Model topology, layer counts, and per-layer dimensions are not yet encapsulated in a formal manifest (`Model::compile_to_manifest()`).
+- **Layer Manifest:** Model topology, layer counts, and per-layer dimensions are not yet encapsulated in a formal manifest. Manifest extraction from `Sequential` is the v0.1.0 scope; the `Model<M>` container is deferred until a non-sequential topology exists.
 - **Rounding Mode:** Rust and RTL both use simple truncation rather than round-half-to-even.
 - **Automated Assertions:** `npu/tests/tb.sv` logs outputs and dumps waveforms but does not yet assert bit-exact equality against golden vectors with non-zero exit codes.
 - **Per-Product Reduction:** The processing element accumulates the full-width arithmetic-shifted product rather than the 32-bit slice of the arithmetic contract ([`specs/ARITHMETIC_Q8_24.md`](specs/ARITHMETIC_Q8_24.md), Section 3.1); the deviation is recorded there.

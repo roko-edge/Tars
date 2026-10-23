@@ -158,3 +158,34 @@ retrofitting encodings later costs descriptor format revisions.
 Normative document updates ride with their steps and are maintainer-owned:
 the research index in [`README.md`](README.md), the arithmetic contract and
 memory format at Step 1, and `npu/README.md` after the RTL changes.
+
+---
+
+## 5. Revision (October 2026): Ternary-Only Release Engine
+
+**Superseding maintainer decision.** The release NPU implements `mode = 1` (dense
+ternary) only. The dense Q8.24 weight mode is not a shipped mode: the existing
+single-layer Q8.24 prototype remains as the development substrate and as the
+synthesis baseline for resource and energy comparisons. The int8 variant
+(`mode = 3`) is reserved in the descriptor and postponed beyond v0.1.0. The
+accuracy release gate is $> 90\%$ for the ternary-quantized model on the bit-exact
+path; the $\ge 95\%$ figure remains the target of the f32 software reference. The
+sections above record the superseded dual-mode plan and retain the failure-surface
+isolation argument, which the revised ladder below preserves.
+
+Consequences for the implementation ladder of Section 4.2:
+
+| Step | Revised scope | Acceptance gate |
+|---|---|---|
+| 1 | Contract and golden model: epilogue sign-off, four-word layer descriptor, export of `program.mem`, `wt.mem`, `w0.mem` | Unchanged |
+| 2 | Runtime signals and engine extraction over the existing Q8.24 arithmetic | Unchanged: legacy single-layer results identical, zero width warnings |
+| 3 | MAC swap to conditional accumulation; single-layer ternary validated on a small network | Small ternary network bit-exact against the Rust golden model |
+| 4 | Top sequencer and ping-pong activation banks | Two-layer ternary network bit-exact against the Rust golden model |
+| 5 | MNIST release run | MNIST $784 \to 128 \to 10$ executes in `mode = 1` bit-exact against the Rust model; tag v0.1.0 |
+
+Step 3 preserves the failure-surface isolation of Section 1: the epilogue and the
+conditional accumulator are first observed on a network small enough to verify by
+hand, before the bank-switching surface of Step 4 is admitted. Dense Q8.24 and
+dense ternary share addressing and cycle counts (Section 2.1), so the release
+claims of dense ternary inference are memory footprint and per-operation energy,
+not latency; the latency claim belongs to `mode = 2` in v0.2.0.

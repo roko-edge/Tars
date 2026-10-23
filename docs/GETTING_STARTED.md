@@ -36,9 +36,11 @@ cargo build
 
 The package contains the library and two binaries, `main` and `visualization`.
 
-`cargo test` compiles and passes. The suite contains four tests; one of them exercises
-the tensor core, and the module hierarchy, the optimizer, and the export path have no
-coverage yet.
+`cargo test` compiles. The suite contains four tests; one of them exercises the
+tensor core, and the module hierarchy, the optimizer, and the export path have no
+coverage. The suite is not deterministic: the distribution tests sample the unseeded
+global generator, and the ternary-distribution test asserts a variance bound at the
+true value of its distribution, so it fails intermittently.
 
 ---
 
@@ -51,14 +53,18 @@ cargo run --bin main
 The current binary:
 
 1. Selects the OR experiment in source; it has no prompt or command-line selector.
-2. Trains for the configured 100,000 epochs starting from zero-initialized weights and biases.
+2. Trains for the configured 100,000 epochs. Weights initialize through the unseeded
+   random constructor and biases to zero, so runs are not reproducible.
 3. Prints periodic mean squared error values and final floating-point predictions.
-4. Writes Q8.24 artifacts to `npu/data/weights.mem`, `npu/data/bias.mem`,
-   `npu/data/activations.mem`, and `npu/data/target.mem`.
-5. Constructs a model graph in memory without saving or rendering it.
+4. Skips the export calls: `export_model` and `export_data` are commented out in the
+   source, so the checked-in `npu/data/` files are not overwritten.
+5. Extracts the network topology and writes `src/view/artifacts/graph.dot`, then
+   renders `src/view/artifacts/network.png` through Graphviz. The directory is not
+   created automatically and is absent in a fresh clone, so the run terminates with a
+   file error after the predictions are printed.
 
-These are the same files the NPU testbench reads: running the Rust binary
-overwrites the checked-in memory files consumed by `make sim`.
+The files under `npu/data/` are the ones the NPU testbench reads; because the export
+calls are disabled, they remain unchanged by a training run.
 
 See [`EXPERIMENTS.md`](EXPERIMENTS.md) for the experiment contract and selection
 limitations.

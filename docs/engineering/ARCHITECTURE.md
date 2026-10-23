@@ -24,7 +24,7 @@ src/
     local.rs.template     Incomplete local-experiment starting point
   data.rs                 Training samples
   math.rs                 Scalar activations and random initialization
-  math/tensor.rs          Experimental tensor storage
+  math/tensor.rs          Tensor core: storage dispatch, views, kernels, products
   modules.rs              Module trait and concrete-module enum
   modules/
     linear.rs             Dense layer
@@ -43,6 +43,7 @@ src/
 npu/
   src/npu.sv              Parameterized single-layer affine controller (`IN`, `OUT`)
   src/pe.sv               Multiply-accumulate processing element
+  src/linear.sv           Empty placeholder for the layer engine
   tests/tb.sv             Simulation testbench
   data/                    Memory files consumed by the testbench
   Makefile                Simulation, waveform, and lint targets
@@ -81,8 +82,9 @@ impl Sequential {
 
 `Linear` stores weights as `Vec<Vec<f32>>`, indexed by output feature and then input
 feature. Biases are stored as `Vec<f32>`. `Sequential::linear` constructs layers
-through the zeros constructor; the random constructor is not used by the built-in
-experiments.
+through the random constructor, which draws weights from the unseeded global
+generator and initializes biases to zero; the zeros constructor is not used by the
+built-in experiments.
 
 ```rust
 impl Linear {
@@ -125,13 +127,16 @@ bias. `BGD::step` applies the resulting gradient to each linear layer.
 2. Prints its `ExperimentType` identifier and initial MSE.
 3. Trains with full-dataset analytical backpropagation and BGD, reporting progress.
 4. Prints predictions for the configured dataset.
-5. Exports Q8.24 model and dataset artifacts under `npu/`.
-6. Builds a `NetGraph` from the trained model without saving or rendering it.
+5. Skips the Q8.24 export: the `export_model` and `export_data` calls are commented
+   out in the source.
+6. Builds a `NetGraph` from the trained model, writes `src/view/artifacts/graph.dot`,
+   and renders `src/view/artifacts/network.png` through Graphviz.
 
 `Train` is defined in `src/train.rs` and re-exported as `tars::Train`. Experiment
 factories provide the model, epochs, learning rate, dataset, and identifier. Selection
 is fixed by the factory call in the executable source; there is no interactive
-selector. Model and dataset export calls run after training.
+selector. The model and dataset export calls are commented out; the graph artifact
+generation runs after training.
 
 See [`../EXPERIMENTS.md`](../EXPERIMENTS.md) for the configuration contract,
 built-in experiments, reporting behavior, and manual extension workflow.
@@ -144,14 +149,16 @@ the following interface:
 
 ```rust
 impl NetGraph {
-    pub fn new() -> Self;
-    pub fn to_dot(&self) -> String;
-    pub fn save_dot(&self, path: &str) -> std::io::Result<()>;
+    pub fn new(model: Sequential, input_data: &[f32]) -> Self;
+    pub fn network_to_graph(&mut self) -> Result<(), Box<dyn std::error::Error>>;
     pub fn add_node(&mut self, p: Perceptron);
     pub fn add_edge(&mut self, from: usize, to: usize, w: f32);
     pub fn plot(&self);
 }
 ```
+
+Serialization and rendering are reached through `save_dot` and `compile_dot`, provided
+by the private `graph::dot` module.
 
 Node indices are retained in insertion order. `plot` invokes the external `dot`
 command with fixed input and output paths. The visualization executable constructs
@@ -190,9 +197,10 @@ The Rust export module (`src/export.rs`) converts floating-point weights, biases
 | `npu/data/activations.mem` | Q8.24 Hex | `export_data()` | `$readmemh` into the testbench data array |
 | `npu/data/target.mem` | Q8.24 Hex | `export_data()` | Not loaded by the current testbench |
 
-Export and simulation now operate on the same files: running the training binary
-overwrites the checked-in memory files consumed by `make sim`. The shared encoding and
-paths do not provide topology or activation information, `target.mem` holds dataset
-labels rather than golden inference outputs, and the testbench performs no bit-exact
-assertions. Topology compilation and golden-vector parity remain project targets
-recorded in [`../project/ROADMAP.md`](../project/ROADMAP.md).
+The export calls in the training binary are commented out, so the checked-in memory
+files consumed by `make sim` remain from an earlier export and are not overwritten by
+a training run. The shared encoding and paths do not provide topology or activation
+information, `target.mem` holds dataset labels rather than golden inference outputs,
+and the testbench performs no bit-exact assertions. Topology compilation and
+golden-vector parity remain project targets recorded in
+[`../project/ROADMAP.md`](../project/ROADMAP.md).

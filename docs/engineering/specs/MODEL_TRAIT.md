@@ -1,7 +1,14 @@
 # Specification: Model and Module Interface Hierarchy
 
 **Status:** Target architecture. The current runtime still uses `Sequential` with
-`Vec<AnyModule>` and does not provide the `Model<M>` container specified here.
+`Vec<AnyModule>` and does not provide the `Model<M>` container specified here. The
+`Module` trait, the `Sequential` composite, and the parameter surfaces are the
+v0.1.0 scope; `Model<M>` is deferred until a non-sequential topology exists
+(maintainer decision, October 2026), with parameter tracking and manifest extraction
+served by `Sequential` in the interim. The `backward` operation is a pending
+contract addition under the same composite design: recursive like `forward`,
+returning parameter gradients aligned with `parameters()` and applying the
+straight-through estimator to quantizers.
 
 This document specifies the structural interface contract for neural network
 layers, composite blocks, and execution containers in TARS.

@@ -13,7 +13,7 @@ maintained under [`engineering/`](engineering/README.md).
 | `Data` | Stores one input vector and one target vector | Dimensions are not validated by the constructor |
 | `Train` | Groups a model, epoch count, learning rate, dataset, and experiment identifier | It is configuration only; it does not execute training |
 | `ExperimentType` | Identifies the OR or XOR configuration in reporting | It does not select or dispatch a factory |
-| `experiments::or::train()` | Creates the built-in OR configuration | Weights and biases initialize to zero; there is no configurable seed |
+| `experiments::or::train()` | Creates the built-in OR configuration | Weights initialize through the unseeded random constructor and biases to zero; there is no configurable seed |
 | `experiments::xor::train()` | Creates the built-in XOR configuration | The main binary does not select it currently |
 
 See [`EXPERIMENTS.md`](EXPERIMENTS.md) for topologies, datasets, and execution behavior.
@@ -41,7 +41,7 @@ specification is a target architecture, not the current public interface.
 |---|---|---|
 | `cost` | Computes mean squared error over outputs and samples | Empty or dimensionally inconsistent data is not guarded |
 | `backward` | Computes analytical gradients for the supported sequential modules | Operates on the full dataset and supported module variants only |
-| `num_grad` | Computes centered finite-difference gradients | Intended for verification and not used by the main binary |
+| `num_grad` | Computes centered finite-difference gradients | Intended for verification; currently has no callers |
 | `BGD` | Applies batch gradient descent updates | Model and gradient structure compatibility is assumed |
 
 There is no high-level public trainer that owns the complete loop. The executable
@@ -72,13 +72,20 @@ surface:
 |---|---|---|
 | `Tensor::new` | Wraps a storage in a canonical row-major view | The element capacity of the storage is not validated against the shape product |
 | `Tensor::zeros` | Allocates a zeroed buffer for a shape and data type | The packed variants receive a degenerate zero scale, and the ternary fill encoding is not yet materialized |
-| `Tensor::get`, `Tensor::set` | Index lookup and mutation over `f32` storage | The packed variants are not supported; mutation duplicates a shared buffer before writing |
-| `Tensor::transpose` | Zero-copy axis swap of shape and stride vectors | The diagnostic of an out-of-range axis identifier does not name the violated precondition |
+| `Tensor::get`, `Tensor::set` | Index lookup and mutation over `f32` storage | The packed variants terminate without a diagnostic; mutation duplicates a shared buffer before writing |
+| `Tensor::transpose` | Zero-copy axis swap of shape and stride vectors | The diagnostic of an out-of-range axis identifier does not name the violated precondition; the operation has no test coverage |
 | `Tensor::transpose_mut` | In-place axis swap of shape and stride vectors; alters metadata only and does not write to the storage buffer | The diagnostic of an out-of-range axis identifier does not name the violated precondition; the operation has no test coverage |
 | `Tensor::shape`, `Tensor::strides`, `Tensor::offset`, `Tensor::numel`, `Tensor::dtype` | Geometry and type accessors | The type tag is not yet a one-byte copyable value |
-| `Tensor::is_contiguous` | Row-major stride check | Requires canonical strides and a zero physical offset; the check additionally requires a non-empty backing buffer, and terminates on the packed variants |
+| `Tensor::is_contiguous` | Row-major stride and offset check | Applies a non-empty-buffer clause that is not part of the contract, and terminates on the packed variants |
+| `Tensor::make_contiguous` | Re-packs a non-contiguous view into a canonical buffer; shares the storage of an already contiguous source | Carries an identifier distinct from the `contiguous` operation of the specification; no test coverage |
+| `Tensor::add`, `sub`, `mul`, `div` and their in-place variants | Pointwise operations over two tensors, honouring the stride vectors | Shape-mismatch violations are reported through empty diagnostics |
+| `Tensor::mul_scalar`, `div_scalar` and their in-place variants | Pointwise scalar multiplication and division | `div_scalar` does not reject a zero divisor |
+| `Tensor::map`, `map_mut` | Applies a callable to each logical element | The callable may not capture mutable state |
+| `Tensor::sum` | Full reduction across all logical coordinates | Terminates on a rank-zero operand through the iteration helper |
+| `Tensor::matmul`, `matvec`, `outer` | Products over `F32` tensors honouring the stride vectors | Precondition diagnostics do not name the violated precondition; no test coverage |
+| `Tensor::storage` | Read-only access to the backing buffer | Terminates on the packed variants |
 
-The element-wise kernels, the reductions, the products, and the packed access paths
-are specified but absent. The complete storage, view, broadcasting, and
-copy-on-write behavior under
-[`engineering/specs/TENSOR.md`](engineering/specs/TENSOR.md) is a target contract.
+The packed access paths (`I8`, `T3`), the bulk access surface, and the broadcasting
+operations remain specified but absent. The per-operation contract and its
+implementation status are maintained in
+[`engineering/specs/TENSOR.md`](engineering/specs/TENSOR.md).
