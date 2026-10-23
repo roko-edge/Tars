@@ -2,70 +2,65 @@
 
 ## 1. Scope and Human Ownership
 
-Git-tracked files are maintained exclusively by humans.
-AI agents may read them, but must not modify, delete, rename,
-overwrite, or change their permissions.
+Core library architecture, NPU designs, and source code implementations are strictly owned by the human maintainer.
 
-This restriction applies to all tracked files, including source code,
-configuration, scripts, tests, documentation, and this policy.
+AI agents may read protected files to understand system context and contracts, but must not modify, delete, rename, overwrite, or change their permissions.
 
-## 2. File Classification
+This policy file (`AGENTS.md`) is also strictly protected and must not be altered by agents.
 
-A path is protected if it is tracked in the Git index or exists in
-the current HEAD commit. Newly staged files are also protected.
+## 2. File Classification and Access Matrix
 
-Files already protected at the start of a task remain protected
-throughout that task, even if their Git status changes.
+File permissions are governed by repository domain and file type rather than general Git tracking status:
 
-Untracked files, including Git-ignored files, may be created or edited
-only when the maintainer explicitly requests the specific work.
+### Strictly Protected (Read-Only)
+- **Directories:** `lib/` and `npu/` (including all subdirectories and files within them).
+- **Source & Hardware Files:** All Rust (`.rs`) and SystemVerilog (`.sv`, `.svh`) files across the entire repository, as well as any other implementation source code or test suites.
+- **Policy Files:** Root and nested `AGENTS.md` files.
 
-Agents must verify Git tracking status before making any change.
-If classification is uncertain, they must stop and ask the maintainer.
+### Editable (Write-Permitted Within Task Scope)
+- **Build & Infrastructure:** `Makefile`, build scripts, CI/CD pipelines, container definitions, and infrastructure configuration files.
+- **Documentation:** Files within `docs/`, provided all edits strictly adhere to Sections 5 and 6.
+- **Untracked / Temporary Files:** Allowed only when explicitly requested by the maintainer and outside protected paths.
+
+Agents must verify the target path and file extension before making any change. If a file's classification is uncertain, the agent must stop and ask the maintainer.
 
 ## 3. Permitted and Prohibited Actions
 
-Agents may inspect the repository and report findings without editing
-protected files.
+Agents may inspect the entire repository, analyze code in `lib/` and `npu/`, and report findings without editing protected files.
 
-Agents must not untrack files, alter ignore rules, or use symlinks,
-alternate paths, generators, or build commands to bypass protection.
+Agents must not use `Makefile` targets, build scripts, code generators, symlinks, or alternate paths to indirectly overwrite, format, or mutate `.rs`, `.sv`, `lib/`, or `npu/` files.
 
-Every operation must respect the protection of its actual targets,
-including indirect writes and generated output.
+Every operation must respect the protection of its actual targets, including indirect writes and generated output.
 
-Untracked status does not authorize unrelated changes, access to
-secrets, or modification of system configuration.
+Write access to infrastructure and build files does not authorize exposing secrets, weakening security controls, or modifying host system configurations outside the repository.
 
-Hardware programming, privileged changes, and external side effects
-require explicit maintainer authorization.
+Hardware programming, FPGA/NPU flashing, privileged changes, and external side effects require explicit maintainer authorization.
 
 ## 4. Git and Commit Authorship
 
-Agents must not stage files, create commits, or publish changes.
-Commit messages are written by the human author.
+Agents must not stage files, create commits, alter `.gitignore` to bypass path restrictions, or publish changes.
+Commit messages are written exclusively by the human author.
 Agents may review spelling or grammar only upon explicit request.
 
 ## 5. Documentation Standards
 
-Any authorized documentation changes must use a formal technical tone,
-without emojis, greetings, praise, or conversational filler.
+Agents are authorized to create and update documentation within `docs/`, provided they strictly follow these rules:
 
-Documentation must specify purpose, contracts, architecture, and
-rationale, without complete implementation bodies or ready-made algorithms.
-
-Each documentation directory must provide a README.md entry point.
-Prefer consolidated specifications over fragmented documents.
+- Use a formal, objective technical tone without emojis, greetings, praise, or conversational filler.
+- Specify purpose, contracts, architecture, and rationale.
+- Do not include complete implementation bodies or ready-made algorithms in documentation.
+- Ensure each documentation directory provides a `README.md` entry point.
+- Prefer consolidated specifications over fragmented documents.
 
 ## 6. Documentation Organization
 
-- docs/: user documentation for implemented library features.
-- docs/engineering/: architecture, contracts, and technical proposals.
-- docs/project/: planning, status, research, and communication.
+All documentation modifications must respect the following directory structure:
 
-These conventions do not override Git-tracked file protection.
+- `docs/`: user documentation for implemented library features.
+- `docs/engineering/`: architecture, contracts, and technical proposals.
+- `docs/project/`: planning, status, research, and communication.
 
 ## 7. Local Instructions
 
-Nested AGENTS.md files may impose additional restrictions.
-They must not relax the protection of Git-tracked files.
+Nested `AGENTS.md` files may impose additional restrictions within specific subdirectories.
+They must not relax the protection of `lib/`, `npu/`, `.rs`, or `.sv` files.
