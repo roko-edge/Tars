@@ -15,6 +15,7 @@ not establish that a planned capability is available.
 | Inspect the Rust-to-RTL artifact format | [`MEM_FORMAT.md`](MEM_FORMAT.md) | Current format with shared `npu/data/` paths |
 | Review board integration and synthesis architecture | [`BOARD_INTEGRATION.md`](BOARD_INTEGRATION.md) | Board integration architecture and local lab specification |
 | Evaluate the observability design | [`OBSERVABILITY_PROPOSAL.md`](OBSERVABILITY_PROPOSAL.md) | Proposal, not implemented |
+| Review future execution targets and invariance rules | [`FUTURE_TARGETS.md`](FUTURE_TARGETS.md) | Target architecture record for the GPU and embedded phases |
 | Review normative and target contracts | [`specs/README.md`](specs/README.md) | Mixed current and target contracts with explicit status |
 
 ---

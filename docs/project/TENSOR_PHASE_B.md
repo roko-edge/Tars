@@ -56,6 +56,23 @@ in the milestone sense.
 | WP-04, WP-05 | Partially implemented; the addressing remains variant-coupled and the view contract clauses are open |
 | WP-01, WP-03, WP-10, WP-11, WP-12, WP-13 | Open |
 
+### 2.2 Revision (October 2026): Typed-Element Design
+
+The specification was revised to compile-time element types (`Tensor<T>`), replacing
+the container-level storage dispatch against which this plan was originally written.
+The work packages survive the revision in substance; the mapping is recorded below.
+
+| Item | Status under the revised specification |
+|---|---|
+| WP-01 | Unchanged: the one-byte `Copy`/`PartialEq` wire tag |
+| WP-02, WP-03, WP-05, WP-06, WP-07, WP-08, WP-09, WP-10, WP-12, WP-13 | Unchanged in substance; the acceptance criteria apply to the `f32` implementation block |
+| WP-04 | Strengthened: the per-element-type physical addressing rule becomes the associated `Storage` contract of the `Element` trait; defect D-03 is enforced by the type system |
+| WP-11 | Reduced: the unsupported-variant diagnostics (D-02, D-15) are superseded by compile-time absence; the remaining scope is the precondition diagnostics (capacity, indices, zero divisor, alignment) |
+| WP-14 | Reframed as the `Trit` implementation block: packing, the dequantizing read, the mixed matmul, and byte alignment |
+
+The migration of the source to the typed contract precedes the continued closure work
+and is recorded in the current assignments of [`ROADMAP.md`](ROADMAP.md).
+
 ---
 
 ## 3. Work Package Decomposition

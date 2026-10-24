@@ -41,14 +41,19 @@ Every differentiable layer, activation, or composite block must implement the `M
 
 ```rust
 pub trait Module: std::fmt::Debug {
-    fn forward(&self, input: &Tensor) -> Tensor;
-    fn parameters(&self) -> Vec<&Tensor>;
-    fn parameters_mut(&mut self) -> Vec<&mut Tensor>;
+    fn forward(&self, input: &Tensor<f32>) -> Tensor<f32>;
+    fn parameters(&self) -> Vec<&Tensor<f32>>;
+    fn parameters_mut(&mut self) -> Vec<&mut Tensor<f32>>;
 }
 ```
 
+The training element type is `f32` in all modes (latent master weights), so the trait
+stays concrete over the element type in v0.1.0. A device dimension, if admitted later,
+is a mechanical generalization under [`FUTURE_TARGETS.md`](../FUTURE_TARGETS.md),
+Section 4.
+
 #### Contract Expectations
-- `forward`: Accepts an input tensor (contiguous or strided, verifying compatibility across `DType` representations) and evaluates the transformation, returning the resulting tensor without mutating internal layer state.
+- `forward`: Accepts an input tensor (contiguous or strided; the element type is verified statically) and evaluates the transformation, returning the resulting tensor without mutating internal layer state.
 - `parameters`: Collects immutable references to all parameter tensors owned by the module (e.g., weights and biases, which may carry continuous `F32` or quantized `Ternary` `DType` variants).
 - `parameters_mut`: Collects mutable references to all parameter tensors in identical order, enabling in-place parameter updates during optimization.
 

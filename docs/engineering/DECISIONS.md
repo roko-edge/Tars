@@ -55,3 +55,41 @@ documentation are distributed under the Apache License, Version 2.0.
 - Versions already published remain under Apache-2.0; future versions may be
   relicensed only with the consent of all copyright holders.
 - Commercial licensing terms are obtained from the authors.
+
+## ADR-004: Container-level type dispatch instead of dtype generics
+
+**Status:** Implemented (superseded by the typed-element revision of
+[`specs/TENSOR.md`](specs/TENSOR.md), October 2026; the container-level dispatch
+described here remains in the source until that migration lands)
+
+**Decision:** `Tensor` carries its numerical representation through the container-level
+`Storage` enum, and the `DType` tag is derived from the storage variant on demand.
+The tensor type is not generic over the element type, and storage is not a trait
+object.
+
+**Rationale:**
+
+- The dtype variety of this project is decided at runtime: by the training mode, by
+  the layer-descriptor `mode` field, and by the contents of exported artifacts.
+  Generic tensors would not remove the runtime dispatch; they would relocate it to
+  every consumer that must handle the full variant set anyway.
+- Quantization-aware training holds latent `F32` master weights and derived packed
+  tensors in the same structures; heterogeneous collections require one concrete
+  tensor type.
+- The dispatch cost is one branch per operation; the kernels inside each arm are
+  monomorphic, so per-element paths pay no dispatch cost.
+- The pattern follows the runtimes the specification cites (PyTorch ATen,
+  huggingface/candle, tracel-ai/burn, whose `TensorData` carries the dtype at
+  runtime). Runtime dtype tags are the convergence point of machine-learning
+  runtimes; element-type generics are the domain of fixed-type numerical array
+  libraries.
+
+**Current consequences:**
+
+- Adding a future dtype is additive: one `Storage` variant, one `DType` tag, one
+  match arm per internal operation. Public signatures do not change.
+- A reserved variant without an access path is a supported state: `I8` is retained
+  in the variant space with its access deferred beyond v0.1.0, under the same rule
+  as the reserved descriptor `mode = 3`.
+- `dtype()` is derived from the storage; the struct carries no parallel tag, so no
+  pairing can drift.

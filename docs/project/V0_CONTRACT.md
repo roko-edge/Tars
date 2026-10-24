@@ -42,7 +42,7 @@ The `model/` container is deferred until a non-sequential topology exists (Secti
 
 ### 2.1 Complete Tensor Engine (`src/math/tensor.rs`)
 - Full N-dimensional contiguous and strided `Tensor` implementation with `Arc` storage.
-- Explicit data type representation via `DType` enum (`F32`, `I8`, `T3`), matching [`engineering/specs/TENSOR.md`](../engineering/specs/TENSOR.md). Q8.24 is strictly a serialization format of the exporter and is not a tensor `DType`. The `I8` variant is deferred beyond v0.1.0.
+- Compile-time element types on `Tensor<T>` (`f32` in the current phase; `Trit` in the v0.1.0 arc; `i8` deferred), with `DType` as the one-byte wire tag derived from the element type, matching [`engineering/specs/TENSOR.md`](../engineering/specs/TENSOR.md). Q8.24 is strictly a serialization format of the exporter and is not an element type.
 - Zero-copy view transformations: `slice`, `transpose`, `reshape`, `permute`.
 - Multidimensional NumPy-compliant broadcasting.
 - High-performance row-major matrix multiplication (`matmul`) for float tensors, and mixed-precision matrix multiplication for ternary weight tensors.
@@ -127,7 +127,8 @@ To ensure v0.1.0 abstractions seamlessly scale to CNNs, Closed-Form Continuous (
 | Version | Scope |
 |---|---|
 | **v0.1.0** | MNIST with the f32 reference model ($\ge 95\%$) and the ternary release gate ($> 90\%$ on the bit-exact path); ternary-only NPU engine with bit-exact parity; exporter formats: Q8.24 serialization and dense ternary (`mode = 1`); visualization (Section 3) and research logging (Section 4). |
-| **v0.2.0** | `mode = 2` zero-skipping ternary inference ([`research/LOG-006`](research/LOG-006-ternary_zero_skipping_encoding.md)), admitted under the compatibility rules of LOG-007, Section 2.4. The int8 (`I8`/`mode = 3`) capability may enter this phase. |
+| **v0.2.0** | `mode = 2` zero-skipping ternary inference ([`research/LOG-006`](research/LOG-006-ternary_zero_skipping_encoding.md)), admitted under the compatibility rules of LOG-007, Section 2.4. The int8 (`I8`/`mode = 3`) capability may enter this phase, with embedded and microcontroller inference as its prospective consumer. |
+| **v0.3.0** | GPU training via cubecl (Vulkan) with custom ternary kernels, per [`engineering/FUTURE_TARGETS.md`](../engineering/FUTURE_TARGETS.md). The device dimension remains compile-time and feature-gated; the golden reference stays CPU-deterministic. |
 | **v1.0+** | Architectural expansion era (Section 5): CNNs, CfC networks, Neural ODEs, DAG topologies, arbitrary-rank tensors, and an operation-level autodiff engine. |
 
 The optimizer of record for v0.1.0 is BGD; Adam is admissible but is not required by any gate.
@@ -137,9 +138,13 @@ The optimizer of record for v0.1.0 is BGD; Adam is admissible but is not require
 | Term | Meaning |
 |---|---|
 | Training mode | `F32` training or quantization-aware ternary training; both operate on latent `F32` master weights |
-| Storage `DType` | `F32`, `I8`, `T3` (`I8` deferred beyond v0.1.0) |
+| Element type | The compile-time `T` of `Tensor<T>`: `f32` in the current phase, `Trit` in the v0.1.0 arc, `i8` deferred; `DType` is the one-byte wire tag derived from `T` |
 | Export format | Q8.24 words or dense ternary words written under `npu/data/` from the layer manifest |
 | NPU mode | Layer-descriptor field: 0 (dense Q8.24, reserved), 1 (dense ternary, release), 2 (zero-skipping, v0.2.0), 3 (int8, future) |
+
+An element type without an implementation cannot be constructed: absence is enforced
+at compile time rather than diagnosed at runtime. The `i8` wire tag is retained for
+artifact stability, under the same rule as the reserved descriptor `mode = 3`.
 
 ### 6.3 Research Claim Discipline
 
